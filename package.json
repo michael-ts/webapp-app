@@ -1,0 +1,11 @@
+{
+  "name": "webapp-app",
+  "version": "1.4.0",
+  "description": "Web App Library",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Michael Schmidt",
+  "license": "GPL-3.0"
+}
