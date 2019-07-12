@@ -81,7 +81,9 @@ function $value(xz,val) {
 	    return xz.ValueGet()
 	} else if (xz.tagName == "INPUT" && xz.type == "checkbox") {
 	    return xz.checked
-	} else return xz.value  // at least for TEXTAREA
+	} else if ("value" in xz) {
+	    return xz.value  // at least for TEXTAREA
+	} else return xz.textContent
     } else {
 	if (typeof xz.ValueSet == "function") {
 	    return xz.ValueSet(val)
@@ -89,9 +91,11 @@ function $value(xz,val) {
 	    xz.textContent = val
 	    xz.setAttribute("value",val)
 	    xz.value = val
-	} else {
+	} else if ("value" in xz) {
 	    xz.setAttribute("value",val)
 	    xz.value = val
+	} else {
+	    xz.textContent = val
 	}
 	if (xz.tagName == "INPUT" && xz.type == "checkbox") {
 	    xz.defaultChecked = val
@@ -1158,7 +1162,7 @@ function $on(xz,event,fname) {
 
 // Useful functions for dealing with cursors and selections
 function FindPointInText(x,y,txt) {
-    var orig = txt.nodeValue
+    var orig = txt.nodeValue || ""
     var txt1 = orig.slice(0,orig.length/2)
     var txt2 = orig.slice(orig.length/2,orig.length)
     var span0,span1,span2,rect1,rect2,ret=null
@@ -1219,4 +1223,19 @@ function SelectionClear() {
     } else if (document.selection) {  // IE?
 	document.selection.empty();
     }
+}
+
+function onElementLoad(elem,f) {
+    if (typeof elem == "string") {
+	if (!$id(elem)) {
+	    window.requestAnimationFrame(function () {onElementLoad(elem,f) })
+	    return
+	}
+    } else {
+	if (elem.getBoundingClientRect().width == 0) {
+	    window.requestAnimationFrame(function() {onElementLoad(elem,f)})
+	    return
+	}
+    }
+    f(elem)
 }
