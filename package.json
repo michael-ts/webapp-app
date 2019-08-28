@@ -1,6 +1,6 @@
 {
   "name": "webapp-app",
-  "version": "1.5.2",
+  "version": "1.5.3",
   "description": "Web App Library",
   "main": "app.js",
   "scripts": {
