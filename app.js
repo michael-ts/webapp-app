@@ -1,4 +1,4 @@
-var app_version = "1.4.2"
+var app_version = "1.5.2"
 
 // ============================================================================
 // $ Functions
@@ -672,7 +672,7 @@ function js(module,callback,attr) {
 			}
 		    }
 		    if (module_wants[module].length) {
-			console.log("deferring "+module+" initialization due to"+module_wants[module])
+			console.log("deferring "+module+" initialization due to "+module_wants[module])
 			return
 		    }	
 		}
@@ -715,7 +715,7 @@ function js(module,callback,attr) {
 		    for (i=deps.length-1;i>=0;i--) cssload(deps[i])
 		}
 	    }
-	    if (getdeps in window) {
+	    if (typeof window[getdeps] == "function") {
 		var i,deps = window[getdeps]()
 		//app2_MLL_sub(module)
 		console.log("loaded "+module+" with deps="+deps)
@@ -732,7 +732,7 @@ function js(module,callback,attr) {
 			    js(deps[i],g)
 			}
 		    }
-		}
+		} else g()
 	    } else g()
 	}
 	document.getElementsByTagName("head")[0].appendChild(script)
