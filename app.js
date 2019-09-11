@@ -801,7 +801,7 @@ Global(
     Meta,OL,Option,P,Pre,Progress,Section,Span,Strike,Strong,Table,TBody,
     TD,TFoot,TH,THead,TR,TT,U,UL,Video,tagMap,
     // supported $ functions
-    $attr, $add, $id, css,
+    $attr, $add, $id, css, cssload,
     // other
     Global,Register,_PseudoElement,PseudoElementMarkup
 )
