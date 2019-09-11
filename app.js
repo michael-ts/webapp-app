@@ -768,17 +768,17 @@ function app_init() {
     if (typeof window != "object") return
     var dangerKey1Pressed=false
     var dangerKey2Pressed=false
-    window.addEventListener("keydown",function(event) {    
-	if (event.keyCode == Key.DELETE) {
+    window.addEventListener("keydown",function(event) {
+	if (event.key == "Delete") {
 	    dangerKey1Pressed=true
-	} else if (event.keyCode == Key.BACK_SPACE) {
+	} else if (event.key == "Backspace") {
 	    dangerKey2Pressed=true
 	}
     })
     window.addEventListener("keyup",function(event) {
-	if (event.keyCode == Key.DELETE) {
+	if (event.key == "Delete") {
 	    dangerKey1Pressed=false
-	} else if (event.keyCode == Key.BACK_SPACE) {
+	} else if (event.key == "Backspace") {
 	    dangerKey2Pressed=false
 	}
     })
@@ -797,11 +797,11 @@ var Global = function Global() {
 }
 Global(
     // Element functions
-    A,B,Br,Canvas,Col,ColGroup,Div,Em,Font,H1,H2,H3,H4,H5,H6,HR,I,Img,LI,
+    A,B,Br,Button,Canvas,Col,ColGroup,Div,Em,Font,H1,H2,H3,H4,H5,H6,HR,I,Img,LI,
     Meta,OL,Option,P,Pre,Progress,Section,Span,Strike,Strong,Table,TBody,
     TD,TFoot,TH,THead,TR,TT,U,UL,Video,tagMap,
     // supported $ functions
-    $attr, $add,
+    $attr, $add, $id, css,
     // other
     Global,Register,_PseudoElement,PseudoElementMarkup
 )
@@ -977,7 +977,7 @@ function EventKeyDownButton(me,event) {
 	me.hotkeyPending = true
 	me = $id(id)
     }
-    if ((event.which == Key.SPACE || id)
+    if ((event.key == "Space" || id)
 	&& me.getAttribute("value") != "true") {
 	//console.log("OKES")
 	if (typeof event.stopPropagation == "function") event.stopPropagation()
@@ -1005,7 +1005,7 @@ function EventKeyUpButton(me,event) {
 	console.log("keyup found hotkey")
 	me = $id(id)
     }
-    if ((event.which == Key.SPACE || id)
+    if ((event.key == "Space" || id)
 	&& me.getAttribute("value") != "false") {
 	//console.log("OK2")
 	if (typeof event.stopPropagation == "function") event.stopPropagation()
