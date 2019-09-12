@@ -516,6 +516,7 @@ var tagMap = {
 }
 
 var cssloaded={}
+app_prefix=""
 function cssload(module,callback) {
     if (module in cssloaded) {
 	if (callback) callback()
@@ -801,7 +802,8 @@ Global(
     Meta,OL,Option,P,Pre,Progress,Section,Span,Strike,Strong,Table,TBody,
     TD,TFoot,TH,THead,TR,TT,U,UL,Video,tagMap,
     // supported $ functions
-    $attr, $add, $id, css, cssload,
+    $attr, $add, $id, css, cssload, $del, EventMouseDownButton, EventKeyDownButton,
+    EventKeyUpButton, EventMouseUpButton,
     // other
     Global,Register,_PseudoElement,PseudoElementMarkup
 )
