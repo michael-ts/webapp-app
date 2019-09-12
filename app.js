@@ -803,7 +803,7 @@ Global(
     TD,TFoot,TH,THead,TR,TT,U,UL,Video,tagMap,
     // supported $ functions
     $attr, $add, $id, css, cssload, $del, EventMouseDownButton, EventKeyDownButton,
-    EventKeyUpButton, EventMouseUpButton,
+    EventKeyUpButton, EventMouseUpButton, Input, Select, TextArea,
     // other
     Global,Register,_PseudoElement,PseudoElementMarkup
 )
