@@ -804,6 +804,8 @@ Global(
     // supported $ functions
     $attr, $add, $id, css, cssload, $del, EventMouseDownButton, EventKeyDownButton,
     EventKeyUpButton, EventMouseUpButton, Input, Select, TextArea, $value, $index,
+    EventChangeInput, EventChangeCheckbox, EventChangeButton, EventChangeRadio,
+    EventChangeButton,
     // other
     Global,Register,_PseudoElement,PseudoElementMarkup
 )
