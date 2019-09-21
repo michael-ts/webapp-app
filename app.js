@@ -185,7 +185,10 @@ function $add(xz) {
 	    || typeof arguments[argn] == "number") {
 	    var text = arguments[argn]
 	    if (typeof text != "string") text = ""+text
-	    var ii,texts = text.split("\n")
+	    var ii,texts
+	    if (xz.tagName == "TEXTAREA") {
+		texts = [ text ]
+	    } else texts = text.split("\n")
 	    for (ii=0;ii<texts.length;ii++) {
 		if (texts[ii] != "") {
 		    xz.appendChild(_TextElement(texts[ii]))
@@ -516,7 +519,7 @@ var tagMap = {
 }
 
 var cssloaded={}
-app_prefix=""
+//app_prefix=""
 function cssload(module,callback) {
     if (module in cssloaded) {
 	if (callback) callback()
