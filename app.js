@@ -1,4 +1,4 @@
-var app_version = "1.5.3"
+var app_version = "1.5.5"
 
 // ============================================================================
 // $ Functions
@@ -533,6 +533,7 @@ function cssload(module,callback) {
 
     for (i=0;i<links.length;i++) {
 	var src = links[i].getAttribute("href")
+	if (!src) continue
 	var args = src.split("?")
 	if (args[0] == source) break
     }
