@@ -1,4 +1,4 @@
-var app_version = "1.5.5"
+var app_version = "1.6.0"
 
 // ============================================================================
 // $ Functions
@@ -375,6 +375,9 @@ function Em() {
 function Font() {
     return $add(_HTMLElement("font"),arguments)
 }
+function Footer() {
+    return $add(_HTMLElement("footer"),arguments)
+}
 function H1() {
     return $add(_HTMLElement("h1"),arguments)
 }
@@ -393,11 +396,17 @@ function H5() {
 function H6() {
     return $add(_HTMLElement("h6"),arguments)
 }
+function Header() {
+    return $add(_HTMLElement("header"),arguments)
+}
 function HR() {
     return $add(_HTMLElement("hr"),arguments)
 }
 function I() {
     return $add(_HTMLElement("i"),arguments)
+}
+function IFrame() {
+    return $add(_HTMLElement("iframe"),arguments)
 }
 // Img({src:url})
 function Img() {
@@ -494,6 +503,7 @@ var tagMap = {
     H5:'H5',
     H6:'H6',
     HR:'HR',
+    IFRAME:'IFrame',
     IMG:'Img',
     INPUT:'Input',
     LI:'LI',
@@ -698,7 +708,8 @@ function js(module,callback,attr) {
 		}
 		console.log("DEBUG3:",f," vs ",global_args)
 		if (f == global_args[0] + "_init") {
-		    //app2_MLL_done()
+		    console.log("DONE?",module_state[module])
+		    apprun()
 		}
 		var tmp = module_state[module]
 		module_state[module] = true
@@ -742,6 +753,174 @@ function js(module,callback,attr) {
 	}
 	document.getElementsByTagName("head")[0].appendChild(script)
     }
+}
+
+var _appmap = { }
+function appmap(url,scrn) {
+    url = url.split("/")
+    var i, U = _appmap
+    for (i=0;i<url.length;i++) {
+	if (!(url[i] in U)) U[url[i]] = { }
+	U = U[url[i]]
+    }
+    U[""] = scrn
+}
+
+async function apprun() {
+    if (arguments.length > 0) {
+	global_args = Array.from(arguments)
+	history.pushState({},name,"/app/"+global_args.join("/"))	
+    }
+    var i,x=global_args[0],U=_appmap
+    for (i=1;i<global_args.length;i++) global_args[i] = decodeURI(global_args[i])
+    for (i=0;i<global_args.length;i++) {
+	if (global_args[i] in U) {
+	    U = U[global_args[i]]
+	} else break
+	if (typeof U == "string") break
+    }
+    if (U[""]) x = U[""]
+    await appscreen(x)
+}
+
+function Layout_Screen() {
+    return Div({style:{display:"grid",
+				gridTemplateColumns:"100vw",
+				gridTemplateRows:"100vh",
+				overflow:"hidden"}},arguments)
+}
+
+function Layout_Grid(grid,...rest) {
+    return Div({style:{
+	display:"grid",
+	gridTemplateColumns:grid.cols,
+	gridTemplateRows:grid.rows,
+	gridTemplateAreas: grid.areas,
+	overflow:"hidden"}},rest)
+}
+
+var currentScreen, currentDialogs = []
+
+window.onpopstate = function() {
+    apprun()
+}
+
+function screenload(app_path) {
+    var a=appinfo()
+    history.pushState(null,null,a.url_prefix+a.app_base+app_path)
+    apprun()
+}
+
+function screenstateget() {
+    var ob = { }
+    document.location.hash.slice(1).split(";").map(x=>{
+	var k,v,parts = x.split("=").map(decodeURIComponent)
+	if (parts.length < 2) return
+	k = parts.shift()
+	v = parts.join("=")
+	ob[k] = v
+    })
+    return ob
+}
+
+function screenstateset(ob) {
+    var str = [ ]
+    str = Object.keys(ob).map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(ob[k])}`).join(";")
+    history.pushState({},"","#"+str)
+}
+
+async function appscreen(f) {
+    if (typeof f != "function") return
+    while (currentDialogs.length) $del(currentDialogs.pop())
+    var parent
+    if (currentScreen == doc) {
+	doc.innerHTML = ""
+	parent = doc
+    } else if (currentScreen) {
+	parent = currentScreen.parentNode
+	$del(currentScreen)
+    } else {
+	parent = doc
+    }
+    var contents = await f()
+    var ctrl = Layout_Grid(
+	{
+	    cols:"15% 15% 15% 15% 15% 10% 15%",
+	    rows:"100%",
+	    areas:'"A B C D E F G"'
+	},
+	Button("Help",{class:"GREEN",style:{gridArea:"A"}}),
+	Button("Layout",{class:"GREEN",style:{gridArea:"B"}}),
+	// Introductory Help
+	// Help Summary
+	//Button("Context Specific Help",{class:"GREEN",style:{gridArea:"C"}}),
+	//Button("Search for Help",{class:"GREEN",style:{gridArea:"D"}}),
+	//Button("Report Issue",{class:"GREEN",style:{gridArea:"E"}}),
+	Button("User:",{class:"WHITE",style:{gridArea:"F"}}),
+	Button("Guest",{class:"BLUE",style:{gridArea:"G"}})
+    )
+    contents.style.gridArea = "A"
+    ctrl.style.gridArea = "B"
+
+    var scr = Layout_Grid(
+	{
+	    cols:"100%",
+	    rows:"90% 10%",
+	    areas:'"A" "B"'
+	},
+	contents,
+	ctrl
+    )
+
+    $add(parent,Div({id:"screen",
+		     style:{display:"grid",
+			    gridTemplateColumns:"100vw",
+			    gridTemplateRows:"100vh",
+			    overflow:"hidden"}},scr))
+
+    // (TO DO: handle dialogs properly)
+    var is_landscape = (window.innerWidth > window.innerHeight)
+    var g = function() {
+	var new_is_landscape = (window.innerWidth > window.innerHeight)
+	if (new_is_landscape == is_landscape) return
+	is_landscape = new_is_landscape
+	appscreen(name)
+    }
+    //window.onorientationchange = window.resize = g
+    // TO DO: window.onresize from ui.js
+    
+    // (TO DO: If not a dialog,) assign the screen to the screen object so it can be disposed of later
+    currentScreen = doc
+    currentScreen.f_resize = g
+}
+
+async function appdialog(f,args) {
+    if (typeof f != "function") return
+    var resolve_f, reject_f, contents, ret, index, finish, dialog
+    // TO DO: $del() the object and remove it from the currentDialogs array
+    finish = function(f,args) {
+	$del(dialog)
+	currentDialogs.splice(index,1)
+	f(args)
+    }
+    ret =  new Promise(function(resolve, reject) {
+	resolve_f = function() { finish(resolve,arguments) }
+	reject_f = function() { finish(reject,arguments) }
+    })
+    contents = await f(args,resolve_f, reject_f)
+    index = currentDialogs.length
+    currentDialogs.push(contents)
+    $add(doc,dialog=Div({id:"dialog"+currentDialogs.length,
+		  style:{display:"grid",
+			 backgroundColor:"#000000",
+			 gridTemplateColumns:"100vw",
+			 gridTemplateRows:"90vh",
+			 overflow:"hidden",
+			 position:"absolute",
+		      left:0,top:0,width:"100vw",height:"90vh",
+			 zIndex:(1000+index)}},contents))
+    // to do: handle dialogs properly on screen resize
+    return ret
 }
 
 function app_init() {
@@ -954,6 +1133,24 @@ function EventChangeButton(me,event) {
     }
 }
 
+function EventButton(me,event,name) {
+    var i,handlers = me.getAttribute(`on${name}list`)
+    if (handlers) {
+	handlers = handlers.split(",")
+	for (i=0;i<handlers.length;i++) {
+	    var f = window[handlers[i]]
+	    if (typeof(f) == "function") f(me,event)
+	}
+    } else {
+	handlers = me[`on${name}list`]
+	if (handlers) {
+	    for (i=0;i<handlers.length;i++) {
+		if (typeof handlers[i] == "function") handlers[i](me,event)
+	    }
+	}
+    }
+}
+
 function EventClickButton(me,event) {
     var i,handlers = me.getAttribute("onclicklist")
     if (handlers) {
@@ -1040,6 +1237,22 @@ function EventMouseUpButton(me,event) {
     }
 }
 
+function EventPointerDownButton(me,event) {
+    if (me.getAttribute("value") != "true") {
+	me.setAttribute("value","true")
+	EventChangeButton(me,event)
+    }
+    EventButton(me,event,"pointerdown")
+}
+
+function EventPointerUpButton(me,event) {
+    if (me.getAttribute("value") != "false") {
+	me.setAttribute("value","false")
+	EventChangeButton(me,event)
+    }
+    EventButton(me,event,"pointerup")
+}
+
 // User Interface (input) elements
 // Button, Input, Select, TextArea
 
@@ -1052,6 +1265,8 @@ function Button() {
     xz.setAttribute("onkeyup","EventKeyUpButton(this,event)")
     xz.setAttribute("onmousedown","EventMouseDownButton(this,event)")
     xz.setAttribute("onmouseup","EventMouseUpButton(this,event)")
+    xz.setAttribute("onpointerdown","EventPointerDownButton(this,event)")
+    xz.setAttribute("onpointerup","EventPointerUpButton(this,event)")
     xz.setAttribute("onclick","EventClickButton(this,event)")
     return xz
 }
@@ -1245,5 +1460,5 @@ function onElementLoad(elem,f) {
 	    return
 	}
     }
-    f(elem)
+    f($id(elem))
 }

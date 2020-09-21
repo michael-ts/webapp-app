@@ -7,7 +7,7 @@
   html,body { height:100% }
 </style>
 <script type="text/javascript">
-var app_html_version = "1.5.3"
+var app_html_version = "1.6.0"
 
 function Script(src) {
     var script = document.createElement("script")
@@ -15,44 +15,63 @@ function Script(src) {
     script.setAttribute("src",src)
     document.getElementsByTagName("head")[0].appendChild(script)
 }
+function appinfo() {
+  var app_base,app_path,app,tmp
+  var name = document.location.pathname.split("/").pop()
+  if (name == "app.html") {
+    // file:///path/to/app.html?appname+path#state
+    // https://host/path/to/app.html?appname+path#state
+    app_prefix=[]
+    app = "app.html"
+    app_base = "app.html?"
+    app_path = document.location.search.slice(1).split("/")
+  } else {
+    // https://host/app/appname#state
+    // https://host/app/appname/path#state
+    app_prefix=[""]
+    app = "app"
+    app_base = "app/"
+  }
+  tmp=document.location.pathname.split("/")
+  while (tmp.length > 0) {
+    var elem = tmp.shift()
+    if (elem == app) break
+    app_prefix.push(elem)
+  }
+  app_prefix = app_prefix.join("/")
+  if (app_prefix[app_prefix.length-1] != "/") app_prefix=app_prefix+"/"
+  if (app == "app") {
+    app_path = tmp
+  }
+  var app_state=decodeURIComponent(document.location.hash.slice(1))
+
+  return {
+    url_prefix:document.location.protocol+"//"+document.location.host+app_prefix,
+    app_prefix:app_prefix, app_base:app_base, 
+    app_path:app_path, app_state:app_state
+  }
+}
+
 var app_prefix=""
-var app, global_args, app_base
+var app, global_args
 var doc
 var head=document.head;
 (function() {
-  var tmp = document.location.pathname.split("#")[0].split("/")
-  if (tmp[tmp.length-1] == "app.html") {
-    // file:///path/to/app.html#appname
-    // http://host/path/to/app.html#appname
-    appbase = "app.html#"
-    app = [ "", "app" ].concat(document.location.hash.slice(1).split("/"))
-  } else {
-    // http://host/app/appname
-    // http://host/app/appname/args
-    appbase = "/app/"
-    app_prefix="/"
-    app=document.location.pathname.split("/")
-  }
-  Script(app_prefix+"compat.js")
-  Script(app_prefix+"app.js")
-  var app2 = app.slice(3)
-  app=app[2] // [app.length-1]
-  var str = document.location.search, x=[]
-  if (str) {
-    if (str[0] == "?") str = str.slice(1,str.length)
-    x=str.split("+")
-  }
-  console.log(app,app2,x)
-  global_args = [ app ].concat(app2).concat(x)
+  var a = appinfo()
+  app_prefix = a.app_prefix
+  global_args = a.app_path
+  app = a.app_path[0]
+  Script(a.url_prefix+"compat.js")
+  Script(a.url_prefix+"app.js")
   document.title = app
 })();
 </script>
 </head>
-<body onload="doc=document.body;js(app,function() {$del('tmp')})" style="background:linear-gradient(rgb(158,3,255),rgb(0,0,0))">
+<body onload="doc=document.body;js(app,function() {$del('tmp')})" style="">
   <div id="tmp" style="position:fixed; right:50%; bottom:25%; height:100%;">
     <div style="background-color:rgb(79,1,128);border:10px solid white;opacity:1;left:50%;position:relative;top:50%;color:rgb(255,255,0)"">
       <center style='font-size:10vw'>WebApp</center>
-      <center style='font-size:3em'>Version <span id="version">1.5.3</span></center>
+      <center style='font-size:3em'>Version <span id="version">1.6.0</span></center>
     </div>
   </div>
 <noscript>
