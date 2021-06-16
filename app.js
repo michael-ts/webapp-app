@@ -1,4 +1,4 @@
-var app_version = "1.6.0"
+var app_version = "1.7.0"
 
 // ============================================================================
 // $ Functions
@@ -785,8 +785,8 @@ async function apprun() {
 
 function Layout_Screen() {
     return Div({style:{display:"grid",
-				gridTemplateColumns:"100vw",
-				gridTemplateRows:"100vh",
+				gridTemplateColumns:"100%",
+				gridTemplateRows:"100%",
 				overflow:"hidden"}},arguments)
 }
 
@@ -802,13 +802,13 @@ function Layout_Grid(grid,...rest) {
 var currentScreen, currentDialogs = []
 
 window.onpopstate = function() {
+    var a=appinfo()
+    global_args = a.app_path
     apprun()
 }
 
 function screenload(app_path) {
-    var a=appinfo()
-    history.pushState(null,null,a.url_prefix+a.app_base+app_path)
-    apprun()
+    apprun.apply(this,app_path.split("/"))
 }
 
 function screenstateget() {
@@ -843,30 +843,37 @@ async function appscreen(f) {
 	parent = doc
     }
     var contents = await f()
+    var back, forward
     var ctrl = Layout_Grid(
 	{
-	    cols:"15% 15% 15% 15% 15% 10% 15%",
+	    cols:"15% 15% 15% 7.5% 7.5% 10% 15% 15%",
 	    rows:"100%",
-	    areas:'"A B C D E F G"'
+	    areas:'"back A B C1 C2 F G forward"'
 	},
+	back=Button("",{class:"ORANGE RoundedL",style:{gridArea:"back"}}),
 	Button("Help",{class:"GREEN",style:{gridArea:"A"}}),
 	Button("Layout",{class:"GREEN",style:{gridArea:"B"}}),
+	Button({class:"BLACK",disabled:"disabled",style:{gridArea:"C1"}}),
+	Button({class:"BLACK",disabled:"disabled",style:{gridArea:"C2"}}),
 	// Introductory Help
 	// Help Summary
 	//Button("Context Specific Help",{class:"GREEN",style:{gridArea:"C"}}),
 	//Button("Search for Help",{class:"GREEN",style:{gridArea:"D"}}),
 	//Button("Report Issue",{class:"GREEN",style:{gridArea:"E"}}),
 	Button("User:",{class:"WHITE",style:{gridArea:"F"}}),
-	Button("Guest",{class:"BLUE",style:{gridArea:"G"}})
+	Button("Guest",{class:"BLUE",style:{gridArea:"G"}}),
+	forward=Button("",{class:"ORANGE RoundedR",style:{gridArea:"forward"}})
     )
-    contents.style.gridArea = "A"
-    ctrl.style.gridArea = "B"
+    back.onclicklist = [ ()=>history.back() ]
+    forward.onclicklist = [ ()=>history.forward() ]
+    contents.style.gridArea = "AAA"
+    ctrl.style.gridArea = "BBB"
 
     var scr = Layout_Grid(
 	{
 	    cols:"100%",
 	    rows:"90% 10%",
-	    areas:'"A" "B"'
+	    areas:'"AAA" "BBB"'
 	},
 	contents,
 	ctrl
@@ -917,9 +924,701 @@ async function appdialog(f,args) {
 			 gridTemplateRows:"90vh",
 			 overflow:"hidden",
 			 position:"absolute",
-		      left:0,top:0,width:"100vw",height:"90vh",
+			 left:0,top:0,width:"100vw",height:"90vh",
 			 zIndex:(1000+index)}},contents))
     // to do: handle dialogs properly on screen resize
+    return ret
+}
+
+/*
+  appdialog function to display a list of choices.
+  args: {
+      id: "<id>",
+      choices: [ ... ],
+      cancel: <boolean or text for cancel button (default: "Cancel")
+      default: "<current value>"
+  }
+*/
+function ChoiceList(args,resolve,reject) {
+    var h = ("h" in args) ? args.h : "10%"
+    var cancel
+    if (args.cancel) {
+	var text = (typeof args.cancel == "string" ? args.cancel : "Cancel")
+	var cancel = Button(text,{id:args.id+"0",class:"ORANGE RoundedL",style:{width:"100%",height:h}})
+	cancel.onclicklist = [ function() { resolve(false,-1) } ]
+    }
+    var buttons = args.choices.map((choice,i)=>{
+	var button = Button(choice, {id:args.id+i,class:"BLUE",style:{width:"100%",height:h}})
+	button.onclicklist = [ function() { resolve(choice,i) } ]
+	if (choice == args.default) {
+	    onElementLoad(button,function() {
+		console.log(button)
+		button.focus()
+	    })
+	}
+	return button
+    })
+    var config = {
+	id:args.id,
+	scrollers:args.scrollers,
+	orientation:"v"
+    }
+    if (cancel) config.header = cancel //buttons.unshift(cancel)
+    if (!("scrollers" in args)) args.scrollers = true
+    var ret = WidgetScroller(buttons, config)
+    return ret
+}
+
+// TO DO: make all unrecognized properties get assigned to returned div
+function WidgetScroller() {
+    // id: id of the Div containing the content
+    //     ${id} - container
+    //     ${id}ScrollUp - scroll up button
+    //     ${id}Content - contents
+    //     ${id}ScrollDn - scroll down button
+    // scrollers: if true, show scrollers
+
+    var list = [ ], content = Div(), ti0, ti1, config = { }, i, j
+    for (i=0;i<arguments.length;i++) {
+	if (arguments[i] &&
+	    Object.getPrototypeOf(arguments[i]) === Object.prototype) {
+	    for (j in arguments[i]) {
+		config[j] = arguments[i][j]
+	    }
+	} else {
+	    $add(content,arguments[i])
+	}
+    }
+    if (config.style) $add(content,{style:config.style})
+    
+    var UD = (config.orientation != "h")
+    var offsetTop = UD ? "offsetTop" : "offsetLeft"
+    var Y = UD ? "y" : "x"
+    var width = UD ? "width" : "height"
+    var height = UD ? "height" : "width"
+    var RoundedT = (UD?"RoundedT":"RoundedL")
+    var RoundedB = (UD?"RoundedB":"RoundedR")
+    if (config.scrollers) {
+	var scrollup = Button("",{id:(config.id+"ScrollUp"),class:"ORANGE "+RoundedT})
+	var scrollers_h = (typeof config.scrollers == "boolean") ? 10 : config.scrollers
+	scrollup.style[width]="100%"
+	
+	scrollup.style[height]=scrollers_h+"%"
+	var scrolldn = Button("",{id:(config.id+"ScrollDn"),class:"ORANGE "+RoundedB})
+	scrolldn.style[width]="100%" 
+	scrolldn.style[height]=scrollers_h+"%"
+	ti0 = scrollup.tabIndex
+	ti1 = scrolldn.tabIndex
+
+	if (!UD) scrollup.style.verticalAlign = "top"
+	if (!UD) scrolldn.style.verticalAlign = "top"
+	scrollup.onclicklist = [ function() {
+	    var i, top = content.childNodes[0][offsetTop]
+	    for (i=content.childNodes.length-1;i>=0;i--) {
+		var y = content.childNodes[i].getBoundingClientRect()[Y] - top
+		if (y < 0 && content.childNodes[i].style.display != "none") {
+		    content.scrollBy(UD?0:y,UD?y:0)
+		    break
+		}
+	    }
+	} ]
+	
+	scrolldn.onclicklist = [ function() {
+	    var i, top = content.childNodes[0][offsetTop]
+	    for (i=0;i<content.childNodes.length;i++) {
+		var y = content.childNodes[i].getBoundingClientRect()[Y] - top
+		if (Math.floor(y) > 0) {
+		    content.scrollBy(UD?0:y,UD?y:0)
+		    break
+		}
+	    }
+	} ]
+	list.push(scrollup)
+    }
+    if (config.header && !config.header_h) config.header_h = 10
+    if (config.footer && !config.footer_h) config.footer_h = 10
+    if (config.header) {
+	list.push(config.header)
+	config.header.style.height = config.header_h+"%"
+	config.header.style.width = "100%"
+    }
+    if (content) {
+	var oh = (config.footer_h ? config.footer_h : 0) + (config.header_h ? config.header_h : 0)
+	var h = (config.scrollers ? ((typeof config.scrollers == "boolean") ? 80-oh : (100-oh-2*config.scrollers)) : 100-oh)
+	content.classList.add("scroller")
+	content.style.overflow="scroll"
+	content.style[height]=h+"%"
+	content.id = config.id+"Content"
+	list.push(content)
+    }
+    if (config.footer) {
+	list.push(config.footer)
+	config.footer.style.height = config.footer_h+"%"
+	config.footer.style.width = "100%"
+    }
+    if (config.scrollers) {
+	list.push(scrolldn)
+    }
+    var scrollerx = css(".scroller::-webkit-scrollbar")
+    scrollerx.width=0
+    scrollerx.height=0
+    var scroller = css(".scroller")
+    scroller.overflow = "-moz-scrollbars-none"
+    scroller.msOverflowStyle = "none"
+    scroller.scrollbarWidth = "none"
+    scroller.scrollbarHeight = "none"
+
+    var scrollTop = (UD?"scrollTop":"scrollLeft")
+    var scrollHeight = (UD?"scrollHeight":"scrollWidth")
+    var clientHeight = (UD?"clientHeight":"clientWidth")
+    var ret = Div(list,{id:config.id})
+    var started
+    var f = function(evt) {
+	//console.log(`content.scrollTop=${content.scrollTop} content.clientHeight=${content.clientHeight} content.scrollHeight=${content.scrollHeight}`)
+	if (content[scrollTop] == 0) {
+	    scrollup.style.background="#806757"
+	    scrollup.tabIndex = 0
+	} else {
+	    scrollup.style.background=""
+	    scrollup.tabIndex = ti0
+	}
+	if (content[clientHeight] + content[scrollTop] == content[scrollHeight]) {
+	    scrolldn.style.background="#806757"
+	    scrolldn.tabIndex = 0
+	} else {
+	    scrolldn.style.background=""
+	    scrolldn.tabIndex = ti1
+	}
+	if (!started) setTimeout(f,10)
+	started = true
+    }
+    if (config.scrollers) {
+	content.onscroll = f
+	onElementLoad(content,f)
+    }
+    return ret
+}
+
+var months = [
+    "January", "February", "March", "April", "May", "June", "July",
+    "August", "September", "October", "November", "December"
+]
+
+function DaysInZMonth(year,zmonth) {
+    var dim = 28
+    var t = new Date(year,zmonth,dim)
+    t.setDate(dim)
+    while (1) {
+	t.setDate(t.getDate()+1)
+	if (t.getMonth() != zmonth) break
+	dim++
+    }
+    return dim
+}
+
+function CalendarDays(year, zmonth,resolve) {
+    var ret = [ ]
+    var dom = 1
+    var t = new Date(year,zmonth,1)
+    var dow = t.getDay()
+    var dim = DaysInZMonth(year,zmonth)
+    var DOW = [ "S", "M", "T", "W", "R", "F", "A" ]
+    var week=1
+    dom -= dow
+    for (dow=0;dom<=dim;dom++) {
+	if (dom > 0) {
+	    var b
+	    ret.push(b=Button(dom,{id:"dom"+dom,class:"BLUE",style:{gridArea:DOW[dow]+week}}))
+	    b.onclicklist = [ ((i)=>function() {
+		resolve(new Date(year,zmonth,i),year,zmonth,i)
+	    })(dom) ]
+	}
+	if (++dow % 7 == 0) {
+	    dow = 0
+	    week++
+	}
+    }
+    return ret
+}
+
+/*
+  To use the Calendar dialog, add code something like this:
+
+    var ret = await appdialog(Calendar, {
+	id:"calendar", t:new Date()
+    })
+    if (ret[0]) console.log(ret[0].toISOString())
+
+    if cancelled, returns [ false ]
+    otherwise returns [ new Date(), year, zmonth, dom ]
+*/
+
+function Calendar(args,resolve,reject) {
+    var prev,canc,mo,yr,next,day
+    var t0
+    if ("t" in args) {
+	t0 = new Date(args.t)
+    } else {
+	t0 = new Date()
+    }
+    var year = t0.getYear()+1900
+    var zmonth = t0.getMonth()
+    var dom = t0.getDate()
+    var dow = t0.getDay()
+    var dim,tmp
+    var calc = function() {
+	var i
+	for (i=1;i<=dim;i++) $del("dom"+i)
+	tmp = CalendarDays(year,zmonth,resolve)
+	dim = tmp.length
+	$add(ret,tmp)
+    }
+    var ret = Layout_Grid(
+	{
+	    cols:"14% 15% 14% 14% 14% 15% 14%",
+	    rows:"12.5% 12.5% 12.5% 12.5% 12.5% 12.5% 12.5% 12.5%",
+	    areas:'"prev cancel mo mo mo yr next" "S M T W R F A" "S1 M1 T1 W1 R1 F1 A1" "S2 M2 T2 W2 R2 F2 A2" "S3 M3 T3 W3 R3 F3 A3" "S4 M4 T4 W4 R4 F4 A4" "S5 M5 T5 W5 R5 F5 A5" "S6 M6 T6 W6 R6 F6 A6" '
+	},
+	prev = Button({class:"ORANGE RoundedL",style:{gridArea:"prev"}}),
+	canc = Button("cancel",{class:"ORANGE RoundedT",style:{gridArea:"cancel"}}),
+	mo = Button(months[zmonth],{class:"BLUE",style:{gridArea:"mo"}}),
+	yr = Button(year,{class:"BLUE",style:{gridArea:"yr"}}),
+	next = Button({class:"ORANGE RoundedR",style:{gridArea:"next"}}),
+	Button("S",{class:"WHITE",style:{gridArea:"S"}}),
+	Button("M",{class:"WHITE",style:{gridArea:"M"}}),
+	Button("T",{class:"WHITE",style:{gridArea:"T"}}),
+	Button("W",{class:"WHITE",style:{gridArea:"W"}}),
+	Button("R",{class:"WHITE",style:{gridArea:"R"}}),
+	Button("F",{class:"WHITE",style:{gridArea:"F"}}),
+	Button("S",{class:"WHITE",style:{gridArea:"A"}}),
+	tmp = CalendarDays(year,zmonth,resolve)
+    )
+    dim = tmp.length
+    canc.onclicklist = [ ()=>resolve(false) ]
+    prev.onclicklist = [ ()=>{
+	t0.setMonth(t0.getMonth()-1)
+	year = t0.getYear()+1900
+	zmonth = t0.getMonth()
+	dom = t0.getDate()
+	dow = t0.getDay()
+	mo.textContent = months[zmonth]
+	yr.textContent = ""+year
+	calc()
+    } ]
+    next.onclicklist = [ ()=>{
+	t0.setMonth(t0.getMonth()+1)
+	year = t0.getYear()+1900
+	zmonth = t0.getMonth()
+	dom = t0.getDate()
+	dow = t0.getDay()
+	mo.textContent = months[zmonth]
+	yr.textContent = ""+year
+	calc()
+    } ]
+    mo.onclicklist = [ async ()=>{
+    	var ret = await appdialog(ChoiceList, {
+	    id:"eventMenu",choices:months,scrollers:false,h:"20%",cancel:true,default:mo.textContent
+	})
+	if (!ret[0]) return
+	mo.textContent = ret[0]
+	zmonth = ret[1]
+	t0 = new Date(yr,zmonth,dom)
+	calc()
+    }]
+    yr.onclicklist = [ ()=>{
+	console.log("Prompting for year")
+	var ret = prompt("Enter year")
+	console.log("Prompt returned year",ret)
+	var i = parseInt(ret)
+	if (!isNaN(i)) {
+	    if (!isNaN(new Date(i,zmonth,dom))) {
+		yr.textContent = ""+i
+		year = i
+		t0 = new Date(yr,zmonth,dom)
+		calc()
+	    }
+	}
+    }]
+    onElementLoad("dom1",function() {
+	$id("dom"+dom).focus()
+    })
+    return ret
+}
+
+/*
+  To use the Clock dialog, add code something like this:
+
+    var ret = await appdialog(Clock, {
+	id:"clock", t:new Date()
+    })
+    if (ret[0]) console.log(ret[0].toISOString())
+
+    if cancelled, returns [ false ]
+    otherwise return [ passed_date_with_time_updated ]
+*/
+function Clock(args,resolve,reject) {
+    var cancel, accept, live, H,M,S,MS,AM, isLive, selectedHand="H"
+    var t
+    if ("t" in args) {
+	t = new Date(args.t)
+    } else {
+	t = new Date()
+    }
+    function $svgvc(id,dy) {
+	var b=$id(id).getBoundingClientRect()
+	var y = Number($attr(id,"y"))
+	$attr(id,{y:(y+b.height/dy)})
+    }
+    function pad(n) {
+	n=Number(n)
+	if (n < 10) return "0"+n
+	return ""+n
+    }
+    function pad2(n) {
+	n=Number(n)
+	if (n < 10) return "00"+n
+	if (n < 100) return "0"+n
+	return ""+n
+    }
+    var svg = SVG({id:"clock",style:{gridArea:"clock",position:"relative",top:"50%",transform:"translateY(-50%)"}},
+		  SVGCircle({cx:50,cy:50,r:49,id:"ms",style:{fill:"#AEE0FF"}}),
+		  SVGCircle({cx:50,cy:50,r:39,id:"second",style:{fill:"#AEE0FF"}}),
+		  SVGCircle({cx:50,cy:50,r:29,id:"minute",style:{fill:"#AEE0FF"}}),
+		  SVGCircle({cx:50,cy:50,r:19,id:"hour",style:{fill:"#AEE0FF"}}),
+		  SVGLine({id:"hand1H"}),SVGLine({id:"hand1M"}),SVGLine({id:"hand1S"}),SVGLine({id:"hand1MS"}),
+		  SVGLine({id:"hand2H"}),SVGLine({id:"hand2M"}),SVGLine({id:"hand2S"}),SVGLine({id:"hand2MS"}),
+		  SVGCircle({cx:50,cy:50,r:2,id:"center",style:{fill:"white",strokeWidth:0.5}})
+		 )
+    
+    var fs = "7vw", fs1=""
+    var ret = Layout_Grid(
+	{
+	    cols:"18% 2% 18% 2% 18% 2% 22% 18%",
+	    rows:"10% 80% 10%",
+	    areas:'"cancel cancel X live live live Y accept" "clock clock clock clock clock clock clock clock" "H C1 M C2 S DOT MS AM"'
+	},
+	cancel = Button("Cancel",{class:"ORANGE RoundedT",style:{gridArea:"cancel"}}),
+	live = Button("Live",{class:"GREEN",style:{gridArea:"live"}}),
+	accept = Button("Accept",{class:"ORANGE RoundedT",style:{gridArea:"accept"}}),
+	svg,
+	H=Button("12",{id:"inH",class:"BLUE",style:{gridArea:"H",fontSize:fs}}),
+	Button(":",{disabled:true,class:"WHITE",style:{gridArea:"C1",fontSize:fs,border:0,padding:0}}),
+	M=Button("00",{id:"inM",class:"BLUE",style:{gridArea:"M",fontSize:fs}}),
+	Button(":",{disabled:true,class:"WHITE",style:{gridArea:"C2",fontSize:fs,border:0,padding:0}}),
+	S=Button("00",{id:"inS",class:"BLUE",style:{gridArea:"S",fontSize:fs}}),
+	Button(".",{disabled:true,class:"WHITE",style:{gridArea:"DOT",fontSize:fs,border:0,padding:0}}),
+	MS=Button("000",{id:"inMS",class:"BLUE",style:{gridArea:"MS",fontSize:fs}}),
+	AM=Button("AM",{id:"inAM",class:"BLUE",style:{gridArea:"AM",fontSize:fs}}),
+    )
+    ret.style.minWidth = ret.style.minHeight = 0
+
+    var selectHand = function(hand) {
+	$id("in"+selectedHand).classList.remove("GREEN")
+	$id("in"+selectedHand).classList.add("BLUE")
+	selectedHand = hand
+	$id("in"+selectedHand).classList.remove("BLUE")
+	$id("in"+selectedHand).classList.add("GREEN")
+    }
+    
+    H.onclicklist = [ ()=>selectHand("H") ]
+    M.onclicklist = [ ()=>selectHand("M") ]
+    S.onclicklist = [ ()=>selectHand("S") ]
+    MS.onclicklist = [ ()=>selectHand("MS") ]
+    AM.onclicklist = [ ()=>{
+	if (AM.textContent == "AM") {
+	    AM.textContent = "PM"
+	} else {
+	    AM.textContent = "AM"
+	}
+    } ]
+    cancel.onclicklist = [ ()=>resolve(false) ]
+    accept.onclicklist = [ ()=>{
+	var h = parseInt($id("inH").textContent)
+	var am = $id("inAM").textContent == "AM"
+	if (h < 12 && !am) h += 12
+	else if (h == 12 && am) h = 0
+	t.setHours(h)
+	t.setMinutes(parseInt($id("inM").textContent))
+	t.setSeconds(parseInt($id("inS").textContent))
+	t.setMilliseconds(parseInt($id("inMS").textContent))
+	resolve(t)
+    } ]
+    live.onclicklist = [ ()=>{
+	isLive = !isLive
+ 	if (isLive) {
+	    requestAnimationFrame(updatelive)
+	    live.textContent = "Stop"
+	    live.classList.remove("GREEN")
+	    live.classList.add("RED")
+	} else {
+	    live.textContent = "Live"
+	    live.classList.remove("RED")
+	    live.classList.add("GREEN")
+	}
+    } ]
+    var handr,cr,x0,y0,svg_x0,svg_y0,svg_dx,svg_dy,start_val
+    
+    svg.ontouchstart = function(ev) {
+	if (isLive) return
+	//console.log("touchstart,",svg.ontouchmove);
+	var P=polar(ev.touches[0].clientX,ev.touches[0].clientY)
+	switch (selectedHand) {
+	case "H": handr = 10; start_val = $id("inH").textContent; break
+	case "M": handr = 22; start_val = $id("inM").textContent; break
+	case "S": handr = 32; start_val = $id("inS").textContent; break
+	case "MS": handr = 42; start_val = $id("inMS").textContent; 
+	}
+	sethand(selectedHand,ev.touches[0].clientX,ev.touches[0].clientY)
+	console.log("touchstart done")
+    }
+    svg.ontouchmove = function(ev) {
+	if (isLive) return
+	sethand(selectedHand,ev.touches[0].clientX,ev.touches[0].clientY)
+    }
+
+    svg.ontouchend = function(ev) {
+	var chg
+	switch (selectedHand) {
+	case "H":
+	    if (start_val != $id("inH").textContent) {
+		$id("inM").focus()
+		$id("inM").click()
+	    }
+	    break
+	case "M":
+	    if (start_val != $id("inM").textContent) {
+		$id("inS").focus()
+		$id("inS").click()
+	    }
+	    break
+	case "S":
+	    if (start_val != $id("inS").textContent) {
+		$id("inMS").focus()
+		$id("inMS").click()
+	    }
+	    break
+	case "MS": 
+	    if (start_val != $id("inMS").textContent) {
+		$id("inAM").focus()
+		$id("inAM").click()
+	    }
+	    break
+	}
+    }
+    svg.ontouchcancel = function(ev) { }
+    
+    // TO DO: save old handlers and restore when disposing of dialog
+    document.ontouchstart = function() { }
+    document.ontouchmove = function() { }
+    
+    var hand = function(name,degrees,len,w1,w2) {
+	var angle = degrees * Math.PI / 180 - Math.PI/2
+	//i = 11 // hour-1
+	//angle = 2*Math.PI/12*i - Math.PI/2 + 2*Math.PI/12
+	x2 = 50+len*Math.cos(angle)
+	y2 = 50+len*Math.sin(angle)
+	if (w1)	$replace("hand1"+name,SVGLine({id:name+"1",x1:50,y1:50,x2:x2,y2:y2,
+				      style:{
+					  strokeWidth:w1,
+					  stroke:"black",
+					  strokeLinecap:"round"
+				      }}))
+	if (w2) $replace("hand2"+name,SVGLine({id:name+"2",x1:50,y1:50,x2:x2,y2:y2,
+				      style:{
+					  strokeWidth:w2,
+					  stroke:"white",
+					  strokeLinecap:"round"
+				      }}))    
+    }
+    var scr2svg = function(x,y) {
+	var dx = x - svg_x0
+	var dy = y - svg_y0
+	dx = dx / svg_dx
+	dy = dy / svg_dy
+	return { x:dx, y:dy }
+    }
+    var polar = function(x,y) {
+	var dx = x - x0
+	var dy = y - y0
+	var theta = Math.atan2(dy,dx)
+	var xy = scr2svg(x,y)
+	var dx0=xy.x-50, dy0=xy.y-50
+	var len = Math.sqrt(dx0*dx0+dy0*dy0)
+	return { r:len, a:theta, x:xy.x, y:xy.y }
+    }
+    var sethand = function(ahand,x,y) {
+	var P=polar(x,y)
+	var angle = P.a + Math.PI/2
+	if (ahand == "H") {
+	    P.a = Math.round(P.a / (Math.PI/6)) * (Math.PI/6)
+	    angle = Math.round(angle / (Math.PI/6)) * (Math.PI/6)
+	    H = Math.round(angle/ (Math.PI/6))
+	    while (H <= 0) H += 12
+	    $id("inH").textContent = pad(H)	    
+	} else if (ahand == "M") {
+	    var d,n
+	    if (P.r < 29) {
+		d = 6; n = 5
+	    } else {
+		d = 30; n = 1
+	    }
+	    P.a = Math.round(P.a / (Math.PI/d)) * (Math.PI/d)
+	    angle = Math.round(angle / (Math.PI/d)) * (Math.PI/d)
+	    M = Math.round(angle/ (Math.PI/d))*n
+	    while (M < 0) M += 60
+	    $id("inM").textContent = pad(M)
+	} else if (ahand=="S") {
+	    var d,n
+	    if (P.r < 19) {
+		d = 6; n = 5
+	    } else {
+		d = 30; n = 1
+	    }
+	    P.a = Math.round(P.a / (Math.PI/d)) * (Math.PI/d)
+	    angle = Math.round(angle / (Math.PI/d)) * (Math.PI/d)
+	    S = Math.round(angle/ (Math.PI/d))*n
+	    while (S < 0) S += 60
+	    $id("inS").textContent = pad(S)
+	} else {
+	    var d,n,tmp=0
+	    if (P.r < 20) {
+		d = 2; n = 250
+	    } else if (P.r < 30) {
+		tmp = Math.PI/2
+		P.a -= tmp
+		d = 5; n = 100
+	    } else if (P.r < 40) {
+		d = 50; n = 10
+	    } else {
+		d = 500; n = 1
+	    }
+	    P.a = Math.round(P.a / (Math.PI/d)) * (Math.PI/d)
+	    P.a += tmp
+	    angle = Math.round(angle / (Math.PI/d)) * (Math.PI/d)
+	    MS = Math.round(angle/ (Math.PI/d))*n
+	    while (MS < 0) MS += 1000
+	    $id("inMS").textContent = pad2(MS)
+	}
+	var x2 = handr * Math.cos(P.a)+50
+	var y2 = handr * Math.sin(P.a)+50
+	$attr("hand1"+ahand,{x2:x2,y2:y2})
+	$attr("hand2"+ahand,{x2:x2,y2:y2})
+    }
+    var update = function(t) {
+	var inH = $id("inH")
+	if (!inH) return false // form no longer exists
+	var hour = t.getHours()
+	var isAM
+	if (hour < 12) {
+	    hour++
+	    isAM = true
+	} else {
+	    if (hour > 12) hour -= 12
+	    isAM = false
+	}
+	var min = t.getMinutes()
+	var sec = t.getSeconds()
+	var millis = t.getMilliseconds()
+	hand("H",30*hour,10,3.0,2.5)
+	hand("M",6*min,22,2,1.5)
+	hand("S",6*sec,32,1.5,1.0)
+	hand("MS",360*(millis/1000),42,0.75,0.5)
+	$id("inH").textContent = pad(hour)
+	$id("inM").textContent = pad(min)
+	$id("inS").textContent = pad(sec)
+	$id("inMS").textContent = pad2(millis)
+	$id("inAM").textContent = isAM ? "AM" : "PM"
+	return true
+    }
+    var updatelive = function() {
+	if (!isLive) return
+	if (update(new Date())) requestAnimationFrame(updatelive)	
+    }
+    onElementLoad(svg,function() {
+	var i
+	var b0=svg.getBoundingClientRect()
+	svg_x0 = b0.left
+	svg_y0 = b0.top
+	svg_dx = b0.width / 100
+	svg_dy = b0.height / 100
+	var dy=4*b0.height/100
+
+	cr = $id("center").getBoundingClientRect()
+	x0 = (cr.left+cr.right)/2
+	y0 = (cr.top+cr.bottom)/2
+	
+	$id("in"+selectedHand).classList.remove("BLUE")
+	$id("in"+selectedHand).classList.add("GREEN")
+	$id("in"+selectedHand).focus()
+	
+	for (i=0;i<12;i++) { // hour numbers on face
+	    angle = 2*Math.PI/12*i - Math.PI/2 + 2*Math.PI/12
+	    y = 50+14*Math.sin(angle)
+	    x = 50+14*Math.cos(angle)
+	    $add(svg,SVGText({id:"hour"+i,
+			      x:x,y:y,
+			      style:{fontSize:"1vw",
+				     textAnchor:"middle"}},i+1))
+	    $svgvc("hour"+i,dy)
+	}
+	for (i=0;i<12;i++) { // minute numbers on face
+	    angle = 2*Math.PI/12*i - Math.PI/2
+	    y = 50+24*Math.sin(angle)
+	    x = 50+24*Math.cos(angle)
+	    $add(svg,SVGText({id:"minute"+i,
+				  x:x,y:y,
+				  style:{fontSize:"0.8vw",
+					 textAnchor:"middle"}},pad(i*5)))
+	    $svgvc("minute"+i,dy)
+	}
+	for (i=0;i<12;i++) { // second numbers on face
+	    angle = 2*Math.PI/12*i - Math.PI/2
+	    y = 50+34*Math.sin(angle)
+	    x = 50+34*Math.cos(angle)
+	    $add(svg,SVGText({id:"second"+i,
+				  x:x,y:y,
+				  style:{fontSize:"0.9vw",
+					 textAnchor:"middle"}},pad(i*5)))
+	    $svgvc("second"+i,dy)
+	}
+	for (i=0;i<60;i++) { // minute and second tick marks on face
+	    if (i % 5 == 0) continue
+	    angle = 2*Math.PI/60*i - Math.PI/2
+	    x1 = 50+33*Math.cos(angle)
+	    y1 = 50+33*Math.sin(angle)
+	    x2 = 50+35*Math.cos(angle)
+	    y2 = 50+35*Math.sin(angle)
+	    $add(svg,SVGLine({x1:x1,y1:y1,x2:x2,y2:y2,style:{strokeWidth:0.2}}))
+	    x1 = 50+23*Math.cos(angle)
+	    y1 = 50+23*Math.sin(angle)
+	    x2 = 50+25*Math.cos(angle)
+	    y2 = 50+25*Math.sin(angle)
+	    $add(svg,SVGLine({x1:x1,y1:y1,x2:x2,y2:y2,style:{strokeWidth:0.2}}))
+	}
+	
+	for (i=0;i<100;i++) { // millisecond numbers and tick marks on face
+	    var d = (i%10==0)?43:45
+	    angle = 2*Math.PI/100*i - Math.PI/2
+	    x1 = 50+d*Math.cos(angle)
+	    y1 = 50+d*Math.sin(angle)
+	    x2 = 50+50*Math.cos(angle)
+	    y2 = 50+50*Math.sin(angle)
+	    $add(svg,SVGLine({x1:x1,y1:y1,x2:x2,y2:y2,style:{strokeWidth:0.1}}))
+	    if (i%10 == 0) {
+		y = 50+42*Math.sin(angle)
+		x = 50+42*Math.cos(angle)
+		var n = "."+Math.round(i/10)
+		$add(svg,SVGText({id:"millisecond"+i,
+				      x:x,y:y,
+				      style:{fontSize:"0.9vw",
+					     textAnchor:"middle"}},
+				     n))
+		$svgvc("millisecond"+i,dy)	    
+	    }
+	}
+	//requestAnimationFrame(updatelive)
+	update(t)
+    })
     return ret
 }
 
@@ -1167,6 +1866,7 @@ function EventClickButton(me,event) {
 	    }
 	}
     }
+    event.stopPropagation()
 }
 
 function EventKeyDownButton(me,event) {
@@ -1258,8 +1958,9 @@ function EventPointerUpButton(me,event) {
 
 function Button() {
     var xz = document.createElement("button")
-    $attr(xz,{tabindex:(""+(++GlobalTabIndex))})
     $add(xz,arguments)
+    // buttons created disabled don't get a tab order
+    if (!xz.disabled) $attr(xz,{tabindex:(""+(++GlobalTabIndex))})
     xz.setAttribute("value","false")
     xz.setAttribute("onkeydown","EventKeyDownButton(this,event)")
     xz.setAttribute("onkeyup","EventKeyUpButton(this,event)")
