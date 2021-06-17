@@ -1,0 +1,25 @@
+.version {
+    animation-name: v1_1_0;
+}
+
+body {
+    background: black;
+    color: white;
+}
+
+input {
+    height: 100%;
+    width: 100%;
+    /*text-align: center; */
+}
+
+textarea {
+    height: 100%;
+    width: 100%;
+}
+
+select {
+    height: 100%;
+    width: 100%;
+}
+

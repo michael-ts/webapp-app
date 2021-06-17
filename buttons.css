@@ -1,0 +1,376 @@
+html, body {
+    height: 100%;
+    margin: 0px;
+}
+
+input {
+    box-sizing: border-box;
+}
+
+button {
+    vertical-align: bottom;
+}
+
+
+.RoundedL {
+    border-top-left-radius: 5000px;
+    border-bottom-left-radius: 5000px;
+}
+
+.RoundedR {
+    border-top-right-radius: 5000px;
+    border-bottom-right-radius: 5000px;
+}
+
+.RoundedT {
+    border-top-left-radius: 5000px;
+    border-top-right-radius: 5000px;
+}
+
+.RoundedB {
+    border-bottom-left-radius: 5000px;
+    border-bottom-right-radius: 5000px;
+}
+
+.vButtonOuter {
+    display: inline-block;
+    vertical-align: top;
+}
+
+.vButtonMiddle {
+    display: table;
+    position: relative;
+}
+
+.vButtonInner {
+    display: table-cell;
+    text-align: center;
+    vertical-align: middle;
+/*    font-family: Impact;*/
+}
+
+.vTextInner {
+    display: table-cell;
+    text-align: left;
+    vertical-align: middle;
+/*    font-family: Impact;*/
+}
+
+.BLUE {
+    background-color:#AEE0FF; /* HSB 203,32,100 */
+    color:#000000;
+    border:solid black;
+}
+.BLUE:focus {
+    background-color:#E6F5FF; /* HSB 204,10,100 */
+    background-color:#FFFFFF;  /* 203,32,100 -> 203,32,80 -> 203,32,50*/
+    background: radial-gradient(#AEE0FF 20%,#8BB4CC 66%,#577080 90%);
+    outline-color:transparent;
+    outline-style:none;
+}
+.BLUE:active, .BLUE.active {
+    background:#8BB4CC; /* 203,32,80 -> 203,32,50 -> 203,33,25 */
+    background: radial-gradient(#8BB4CC 20%,#577080 66%,#2B3840 90%);
+}
+
+.GRAY {
+    background-color:#808080; /* HSB 203,32,100 */
+    color:#000000;
+    border:solid black;
+}
+.GRAY:focus {
+    background-color:#808080; /* HSB 204,10,100 */
+    background-color:#FFFFFF;  /* 203,32,100 -> 203,32,80 -> 203,32,50*/
+    background: radial-gradient(#808080 20%,#e0e0e0 66%,#404040 90%);
+    outline-color:transparent;
+    outline-style:none;
+}
+.GRAY:active, .GRAY.active {
+    background:#a0a0a0; /* 203,32,80 -> 203,32,50 -> 203,33,25 */
+    background: radial-gradient(#a0a0a0 20%,#808080 66%,#404040 90%);
+}
+
+.TSBLUE {
+    background-color:rgb(36,97,191); /* HSB 217, 81, 75 */
+    color:#e0e0e0;
+    border:solid black;
+}
+.TSBLUE:focus {
+    /*background-color:rgb(35,93,188);*/
+    /*background-color:#FFFFFF;*/  /* 217,81,100 -> 217,81,80 -> 217,81,50 */
+    background: radial-gradient(rgb(48,129,255) 20%, rgb(39,103,204) 66%, rgb(24, 65, 128) 90%);
+    outline-color:transparent;
+    outline-style:none;
+}
+.TSBLUE:active, .TSBLUE.active {
+    /*background:rgb(36,97,191)*/ /* 217,81,75 -> 217,81,50 -> 217,81,30 */
+    background: radial-gradient(rgb(36,97,191) 20%, rgb(24,65,128) 66%, rgb(15, 39, 77) 90%);
+    background: radial-gradient(rgb(48,129,255) 20%, rgb(39,103,204) 66%, rgb(24, 65, 128) 90%);
+}
+
+.GREEN {
+    background:#b7ffad;
+    color:#000000;
+    border:solid black;
+}
+.GREEN:focus {
+    background:#DDFFD9;
+    background:#FFFFFF;
+    background: radial-gradient(#b7ffad 20%,#93CC8B 66%,#5C8057 80%);
+    outline-color:transparent;
+    outline-style:none;
+}
+.GREEN:active, .GREEN.active {
+    background: #93CC8B;
+    background: radial-gradient(#93CC8B 20%,#5C8057 66%,#2E402B 80%);
+}
+
+.MAGENTA {
+    background-color:#F6AEFF;
+    color:#000000;
+    border:solid black;
+}
+.MAGENTA:focus {
+    background-color:#FBD9FF;
+    background-color:#FFFFFF;
+    background: radial-gradient(#F6AEFF 20%,#c58bcc 66%,#7B5780 80%);
+    outline-color:transparent;
+    outline-style:none;
+}
+.MAGENTA:active, .MAGENTA.active {
+    background-color:#c58bcc;
+    background: radial-gradient(#c58bcc 20%,#7B5780 66%,#3D2B40 80%);
+}
+.RED {
+    background:#FF8585;
+    color:#ffffff;
+    border:solid black;
+}
+.RED:active, .RED.active {
+    background:#CC6A6A;
+    background-active:#CC6A6A;
+}
+
+.ORANGE {
+    background:#FFCDAE;
+    color:#000000;
+    border:solid black;
+}
+.ORANGE:focus {
+    background-color:#FFE7D9;
+    background-color:#FFFFFF;
+    background: radial-gradient(#FFCDAE 20%,#CCA48B 66%,#806757 80%);
+    outline-color:transparent;
+    outline-style:none;
+}
+.ORANGE:active, .ORANGE.active {
+    background-active: #CCA48B;
+    background: radial-gradient(#CCA48B 20%,#806757 66%,#40332B 80%);
+}
+
+.YELLOW {
+    background-color:#FFFF00;
+    color:#000000;
+    border:solid black;
+}
+.YELLOW:focus {
+    background-color:#FFFFD9;
+    background-color:#FFFFFF;
+    background: linear-gradient(to right, #FFFF00, #FFFFD9, #000000);
+    background: radial-gradient(#ffff00 20%,#cccc00 66%,#808000 80%);
+    outline-color:transparent;
+    outline-style:none;
+}
+.YELLOW:active, .YELLOW.active {
+    background-color:#CCCC00;
+    background: radial-gradient(#cccc00 20%,#808000 66%,#404000 80%);
+    color:#000000;
+}
+
+.GREEN0 {
+    background:#b7ffad;
+    color:#000000;
+    border:solid black;
+}
+.BLUE0 {
+    background-color:#AEE0FF;
+    color:#000000;
+    border:solid black;
+}
+
+.BLACK {
+    background:#000000;
+    color:#000000;
+    border:solid black;
+}
+.BLACK:focus {
+    background-color:#E0E0E0;
+    outline-color:transparent;
+    outline-style:none;
+}
+
+.WHITE {
+    background:#000000;
+    color:#FFFFFF;
+    border:solid black;
+}
+
+.BLUE2 {
+    background-color:#8BB4CC;    
+    border:solid black;
+}
+.BLUE2:active, .BLUE2.active {
+    background-color:#688799;
+}
+.BLUE2:focus {
+    background-color:#AEE1FF;
+    background-color:#FFFFFF;
+    outline-color:transparent;
+    outline-style:none;
+}
+
+.TEXTWHITE {
+    background-color:#FFFFFF;
+    color:#000000;
+    border:solid black;
+}
+.TEXTWHITE:focus {
+    background-color:#C0C0C0;
+    outline-color:transparent;
+    outline-style:none;
+}
+
+.TEXTYELLOW {
+    color:#FFFF00;
+    border:solid black;
+}
+.TEXTYELLOW:focus {
+    background-color:#101010;
+    outline-color:transparent;
+    outline-style:none;
+}
+.TEXTBLUE {
+    color:#AEE0FF;
+    background-color:#000000;
+    border:solid black;
+}
+.TEXTBLUE:focus {
+    background-color:#303030;
+    outline-color:transparent;
+    outline-style:none;
+}
+.TEXTGREEN {
+    color:#b7ffad;
+    border:solid black;
+}
+.TEXTGREEN:focus {
+    background-color:#101010;
+    outline-color:transparent;
+    outline-style:none;
+}
+
+table.min0 {
+  outline-width:0; border-style:none; border-width:0;
+  margin-left:0px; margin-top:0px; margin-right:0px; margin-bottom:0px;
+  padding-left:0px; padding-top:0px; padding-right:0px; padding-bottom:0px;
+  border-collapse: collapse;
+}
+table.min0 td {
+  outline-width:0; border-style:none; border-width:0;
+  margin-left:0px; margin-top:0px; margin-right:0px; margin-bottom:0px;
+  padding-left:0px; padding-top:0px; padding-right:0px; padding-bottom:0px;
+  border-collapse: separate;
+  vertical-align: middle;
+  font-family: Impact;
+  text-align: center;
+}
+table.min0 td div {
+  vertical-align: middle;
+  text-align: center;
+  display: table-cell;
+}
+
+div.m0 {
+    background-clip: content-box;
+    display: table-cell;
+    vertical-align: middle;
+/*    font-family: Impact;*/
+    text-align: center;
+}
+div.m1 {
+    border-color: black;
+    background-clip: content-box;
+    display: inline-block;
+    vertical-align: middle;
+/*    font-family: Impact;*/
+    text-align: center;
+}
+select.m1 {
+    vertical-align: middle;
+}
+
+input.m1, span.m1 {
+    vertical-align: middle;
+}
+
+div.pane {
+    background: black;
+}
+
+.noscroll {
+    overflow: scroll;
+    scrollbar-width: none; /* Firefox */
+    scrollbar-height: none;
+    -ms-overflow-style: none;  /* IE 10+ */
+}
+.noscroll::-webkit-scrollbar { /* WebKit */
+    width: 0px;
+    height: 0px;
+}
+ul {
+  list-style: none;
+  padding-inline-start: 0px;
+}
+ol {
+  padding-inline-start: 16px;
+}
+
+li::before {
+  content: "\25BC";
+}
+
+li.closed::before {
+  content: "\25BA";
+}
+
+li.closed ul {
+    display: none;
+}
+
+li.closed ol {
+    display: none;
+}
+
+li ul {
+    padding-inline-start: 40px;
+}
+li ol {
+    padding-inline-start: 40px;
+}
+
+li.gu-mirror::before,.sindu_dragger li::before {
+    content: normal;
+}
+
+a:link {
+    color: #ffff00;
+}
+
+a:visited {
+    color: #c0c000;
+}
+
+a:hover {
+    background: blue;
+}
+
