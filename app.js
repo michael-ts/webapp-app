@@ -1099,6 +1099,37 @@ function WidgetScroller() {
     return ret
 }
 
+function Outline() {
+    var i,j,args = Array.prototype.slice.call(arguments), opts = { }
+    args = args.flat()
+    for (i=args.length-1;i>=0;i--) {
+	if (Object.getPrototypeOf(args[i]) === Object.prototype) {
+	    for (j in args[i]) {
+		opts[j] = args[i][j]
+	    }
+	    args.splice(i,1)
+	}
+    }
+    if (arguments.length < 2) return
+    var div1 = args[0]
+    if (!(div1 instanceof HTMLElement)) div1 = Div(div1)
+    args.shift() // apparently works without this though it's wrong
+    var div2 = Div(args)
+    div2.classList.add("outline2")
+    div2.style.borderTopLeftRadius="10px"
+    div1.onclick = async function() {
+	if (div2.style.display) {
+	    div2.style.display=""
+	    div1.classList.remove("outline1")
+	} else {
+	    div2.style.display="none"
+	    div1.classList.add("outline1")
+	}
+    }
+    if (opts.open === false) div1.onclick()
+    return [ div1, div2 ]
+}
+
 var months = [
     "January", "February", "March", "April", "May", "June", "July",
     "August", "September", "October", "November", "December"
