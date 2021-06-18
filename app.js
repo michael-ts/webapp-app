@@ -844,7 +844,7 @@ async function appscreen(f) {
 	parent = doc
     }
     var contents = await f()
-    var back, forward, user
+    var back, forward, user, help
     if (!logged_in_user) {
 	if (typeof LoggedInCheck == "function") {
 	    var user = await LoggedInCheck()
@@ -861,7 +861,7 @@ async function appscreen(f) {
 	    areas:'"back A B C1 C2 F G forward"'
 	},
 	back=Button("",{class:"ORANGE RoundedL",style:{gridArea:"back"}}),
-	Button("Help",{class:"GREEN",style:{gridArea:"A"}}),
+	help=Button("Help",{class:"GREEN",style:{gridArea:"A"}}),
 	Button("Layout",{class:"GREEN",style:{gridArea:"B"}}),
 	Button({class:"BLACK",disabled:"disabled",style:{gridArea:"C1"}}),
 	Button({class:"BLACK",disabled:"disabled",style:{gridArea:"C2"}}),
@@ -876,6 +876,34 @@ async function appscreen(f) {
     )
     back.onclicklist = [ ()=>history.back() ]
     forward.onclicklist = [ ()=>history.forward() ]
+    help.onclicklist = [ async ()=> {
+	var choice = await appdialog(ChoiceList, {
+	    id:"helpMenu",
+	    choices:[
+		"Introduction",
+		"Quick Reference",
+		"Help on Current Screen",
+		"Search for Help",
+		"Report an Issue"
+	    ],
+	    scrollers:false,
+	    h:"20%",
+	    cancel:true
+	})
+	css(".scroller").color="white"
+	switch (choice[1]) {
+	case 0: // Introductory Help (Intro to WebApp)
+	    await appdialog(HelpIntroDialog,{})
+	    break
+	case 1: // Help Summary (Quick Reference)
+	    await appdialog(HelpReferenceDialog,{})
+	    break
+	case 2: // Context Specific Help
+	case 3: // Search for Help
+	case 4: // Report an Issue
+	}
+	console.log(choice)
+    } ]
     user.onclicklist = [ async ()=>{
 	switch (logged_in_user) {
 	case "Guest": // user is not given the opportunity to log in
@@ -1723,27 +1751,22 @@ function UserPasswordDialog(args,resolve,reject) {
 }
 
 function OkDialog(args,resolve,reject) {
-    var ok, cancel
-    var id = args.id ? args.id : "OkCancelDialog"
-    var text = args.text ? args.text : "Proceed?"
+    var ok
+    var id = args.id ? args.id : "OkDialog"
+    var text = args.text ? args.text : ""
     var oktext = args.yes ? args.yes : "Ok"
-    var canceltext = args.no ? args.no : "Cancel"
 
     var ret = Layout_Screen(
 	Layout_Grid(
 	    {
 		cols:"50% 50%",
 		rows:"66% 33%",
-		areas:'"text text" "ok cancel"'
+		areas:'"text text" "x ok"'
 	    },
 	    Button(text,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"text"}}),
-	    ok=Button(oktext,{id:id+"_ok",class:"ORANGE",style:{gridArea:"ok"}}),
-	    cancel=Button(canceltext,{class:"ORANGE",style:{gridArea:"cancel"}}),
+	    ok=Button(oktext,{id:id+"_ok",class:"ORANGE",style:{gridArea:"ok"}})
 	)
     )
-    cancel.onclicklist = [ function() {
-	resolve(false)
-    } ]
     ok.onclicklist = [ function() {
 	resolve(true)
     } ]
@@ -1777,6 +1800,42 @@ function OkCancelDialog(args,resolve,reject) {
 	resolve(true)
     } ]
     onElementLoad(id+"_ok",()=>$id(id+"_ok").focus())
+    return ret
+}
+
+function HelpIntroDialog(args,resolve,reject) {
+    var ok = Button("Dimiss Help",{class:"ORANGE"})
+    ok.onclicklist = [ ()=>resolve() ]
+    var ret=Layout_Screen(
+	WidgetScroller(
+	    H1("Welcome to WebApp"),
+	    {
+		id:"gt1",
+		scrollers: true,
+		orientation:"v",
+		footer: ok,
+		//footer_h: "5%"
+	    }
+	))
+
+    return ret
+}
+
+function HelpReferenceDialog(args,resolve,reject) {
+    var ok = Button("Dimiss Help",{class:"ORANGE"})
+    ok.onclicklist = [ ()=>resolve() ]
+    var ret=Layout_Screen(
+	WidgetScroller(
+	    H1("WebApp Quick Reference"),
+	    {
+		id:"gt1",
+		scrollers: true,
+		orientation:"v",
+		footer: ok,
+		//footer_h: "5%"
+	    }
+	))
+
     return ret
 }
 
