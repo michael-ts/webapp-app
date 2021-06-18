@@ -239,6 +239,16 @@ button {
     outline-color:transparent;
     outline-style:none;
 }
+.TEXTBLACK {
+    background-color:#000000;
+    color:#FFFFFF;
+    border:solid black;
+}
+.TEXTBLACK:focus {
+    background-color:#404040;
+    outline-color:transparent;
+    outline-style:none;
+}
 
 .TEXTYELLOW {
     color:#FFFF00;

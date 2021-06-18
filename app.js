@@ -829,6 +829,7 @@ function screenstateset(ob) {
     history.pushState({},"","#"+str)
 }
 
+var logged_in_user = ""
 async function appscreen(f) {
     if (typeof f != "function") return
     while (currentDialogs.length) $del(currentDialogs.pop())
@@ -843,7 +844,16 @@ async function appscreen(f) {
 	parent = doc
     }
     var contents = await f()
-    var back, forward
+    var back, forward, user
+    if (!logged_in_user) {
+	if (typeof LoggedInCheck == "function") {
+	    var user = await LoggedInCheck()
+	    if (user) logged_in_user = user
+	}
+	if (!logged_in_user) {
+	    logged_in_user = "Guest"
+	}
+    }
     var ctrl = Layout_Grid(
 	{
 	    cols:"15% 15% 15% 7.5% 7.5% 10% 15% 15%",
@@ -861,11 +871,37 @@ async function appscreen(f) {
 	//Button("Search for Help",{class:"GREEN",style:{gridArea:"D"}}),
 	//Button("Report Issue",{class:"GREEN",style:{gridArea:"E"}}),
 	Button("User:",{class:"WHITE",style:{gridArea:"F"}}),
-	Button("Guest",{class:"BLUE",style:{gridArea:"G"}}),
+	user=Button(logged_in_user,{id:"username",class:"BLUE",style:{gridArea:"G"}}),
 	forward=Button("",{class:"ORANGE RoundedR",style:{gridArea:"forward"}})
     )
     back.onclicklist = [ ()=>history.back() ]
     forward.onclicklist = [ ()=>history.forward() ]
+    user.onclicklist = [ async ()=>{
+	switch (logged_in_user) {
+	case "Guest": // user is not given the opportunity to log in
+	case "Stranger": // user is unable to log in successfully
+	case "Anonymous": // user declines to provide their identity
+	    var new_user = await appdialog(UserPasswordDialog,{})
+	    if (!new_user) return
+	    if (typeof LoginHook == "function"
+		&& !(await LoginHook(new_user.user,new_user.password))) {
+		return
+	    }
+	    new_user = new_user.user
+	    $id("username").textContent = new_user
+	    logged_in_user = new_user
+	    break
+	default: // user logs in successfully
+	    var do_logout = await appdialog(OkCancelDialog,{text:"Log out?"})
+	    console.log(do_logout)
+	    if (do_logout) {
+		if (typeof LogoutHook == "function"
+		    && !(await LogoutHook(logged_in_user))) return // not recommended!
+		logged_in_user = "Anonymous"
+		$id("username").textContent = logged_in_user
+	    }
+	}
+    } ]
     contents.style.gridArea = "AAA"
     ctrl.style.gridArea = "BBB"
 
@@ -908,7 +944,7 @@ async function appdialog(f,args) {
     finish = function(f,args) {
 	$del(dialog)
 	currentDialogs.splice(index,1)
-	f(args)
+	f.apply(window,args)
     }
     ret =  new Promise(function(resolve, reject) {
 	resolve_f = function() { finish(resolve,arguments) }
@@ -945,11 +981,11 @@ function ChoiceList(args,resolve,reject) {
     if (args.cancel) {
 	var text = (typeof args.cancel == "string" ? args.cancel : "Cancel")
 	var cancel = Button(text,{id:args.id+"0",class:"ORANGE RoundedL",style:{width:"100%",height:h}})
-	cancel.onclicklist = [ function() { resolve(false,-1) } ]
+	cancel.onclicklist = [ function() { resolve([false,-1]) } ]
     }
     var buttons = args.choices.map((choice,i)=>{
 	var button = Button(choice, {id:args.id+i,class:"BLUE",style:{width:"100%",height:h}})
-	button.onclicklist = [ function() { resolve(choice,i) } ]
+	button.onclicklist = [ function() { resolve([choice,i]) } ]
 	if (choice == args.default) {
 	    onElementLoad(button,function() {
 		console.log(button)
@@ -1161,7 +1197,7 @@ function CalendarDays(year, zmonth,resolve) {
 	    var b
 	    ret.push(b=Button(dom,{id:"dom"+dom,class:"BLUE",style:{gridArea:DOW[dow]+week}}))
 	    b.onclicklist = [ ((i)=>function() {
-		resolve(new Date(year,zmonth,i),year,zmonth,i)
+		resolve([new Date(year,zmonth,i),year,zmonth,i])
 	    })(dom) ]
 	}
 	if (++dow % 7 == 0) {
@@ -1178,7 +1214,7 @@ function CalendarDays(year, zmonth,resolve) {
     var ret = await appdialog(Calendar, {
 	id:"calendar", t:new Date()
     })
-    if (ret[0]) console.log(ret[0].toISOString())
+    if (ret) console.log(ret[0].toISOString())
 
     if cancelled, returns [ false ]
     otherwise returns [ new Date(), year, zmonth, dom ]
@@ -1650,6 +1686,97 @@ function Clock(args,resolve,reject) {
 	//requestAnimationFrame(updatelive)
 	update(t)
     })
+    return ret
+}
+
+function UserPasswordDialog(args,resolve,reject) {
+    var go, cancel
+    var id = args.id ? args.id : "UserPasswordDialog"
+    var usertext = args.usertext ? args.usertext : "User"
+    var passtext = args.passtext ? args.passtext : "Password"
+    
+    var ret = Layout_Screen(
+	Layout_Grid(
+	    {
+		cols:"50% 50%",
+		rows:"33% 33% 33%",
+		areas:'"user_text user" "password_text password" "cancel go"'
+	    },
+	    Button(usertext,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"user_text"}}),
+	    Input({id:id+"_user",class:"GREEN",style:{gridArea:"user"}}),
+	    Button("Password",{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"password_text"}}),
+	    Input({id:id+"_password",class:"BLUE",type:"password",style:{gridArea:"password"}}),
+	    cancel=Button("Cancel",{class:"ORANGE",style:{gridArea:"cancel"}}),
+	    go=Button("Submit",{class:"ORANGE",style:{gridArea:"go"}}),
+	)
+    )
+    cancel.onclicklist = [ function() {
+	resolve(false)
+    } ]
+    go.onclicklist = [ function() {
+	var username = $value(id+"_user")
+	var password = $value(id+"_password")
+	resolve({user:username,password:password})
+    } ]
+    onElementLoad(id+"_user",()=>$id(id+"_user").focus())
+    return ret
+}
+
+function OkDialog(args,resolve,reject) {
+    var ok, cancel
+    var id = args.id ? args.id : "OkCancelDialog"
+    var text = args.text ? args.text : "Proceed?"
+    var oktext = args.yes ? args.yes : "Ok"
+    var canceltext = args.no ? args.no : "Cancel"
+
+    var ret = Layout_Screen(
+	Layout_Grid(
+	    {
+		cols:"50% 50%",
+		rows:"66% 33%",
+		areas:'"text text" "ok cancel"'
+	    },
+	    Button(text,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"text"}}),
+	    ok=Button(oktext,{id:id+"_ok",class:"ORANGE",style:{gridArea:"ok"}}),
+	    cancel=Button(canceltext,{class:"ORANGE",style:{gridArea:"cancel"}}),
+	)
+    )
+    cancel.onclicklist = [ function() {
+	resolve(false)
+    } ]
+    ok.onclicklist = [ function() {
+	resolve(true)
+    } ]
+    onElementLoad(id+"_ok",()=>$id(id+"_ok").focus())
+    return ret
+}
+
+function OkCancelDialog(args,resolve,reject) {
+    var ok, cancel
+    var id = args.id ? args.id : "OkCancelDialog"
+    var text = args.text ? args.text : "Proceed?"
+    var oktext = args.yes ? args.yes : "Ok"
+    var canceltext = args.no ? args.no : "Cancel"
+
+    var ret = Layout_Screen(
+	Layout_Grid(
+	    {
+		cols:"50% 50%",
+		rows:"66% 33%",
+		areas:'"text text" "ok cancel"'
+	    },
+	    Button(text,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"text"}}),
+	    ok=Button(oktext,{id:id+"_ok",class:"ORANGE",style:{gridArea:"ok"}}),
+	    cancel=Button(canceltext,{class:"ORANGE",style:{gridArea:"cancel"}}),
+	)
+    )
+    cancel.onclicklist = [ function() {
+	resolve(false)
+    } ]
+    ok.onclicklist = [ function() {
+	resolve(true)
+    } ]
+    onElementLoad(id+"_ok",()=>$id(id+"_ok").focus())
     return ret
 }
 
