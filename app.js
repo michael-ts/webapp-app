@@ -2099,7 +2099,7 @@ function EventKeyDownButton(me,event) {
 	me.hotkeyPending = true
 	me = $id(id)
     }
-    if ((event.key == "Space" || id)
+    if ((event.key == " " || event.key == "Space" || id)
 	&& me.getAttribute("value") != "true") {
 	//console.log("OKES")
 	if (typeof event.stopPropagation == "function") event.stopPropagation()
@@ -2127,7 +2127,7 @@ function EventKeyUpButton(me,event) {
 	console.log("keyup found hotkey")
 	me = $id(id)
     }
-    if ((event.key == "Space" || id)
+    if ((event.key == " " || event.key == "Space" || id)
 	&& me.getAttribute("value") != "false") {
 	//console.log("OK2")
 	if (typeof event.stopPropagation == "function") event.stopPropagation()
