@@ -985,10 +985,10 @@ async function appdialog(f,args) {
 		  style:{display:"grid",
 			 backgroundColor:"#000000",
 			 gridTemplateColumns:"100vw",
-			 gridTemplateRows:"90vh",
+			 gridTemplateRows:"100vh",
 			 overflow:"hidden",
 			 position:"absolute",
-			 left:0,top:0,width:"100vw",height:"90vh",
+			 left:0,top:0,width:"100vw",height:"100vh",
 			 zIndex:(1000+index)}},contents))
     // to do: handle dialogs properly on screen resize
     return ret
