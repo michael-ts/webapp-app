@@ -856,15 +856,16 @@ async function appscreen(f) {
     }
     var ctrl = Layout_Grid(
 	{
-	    cols:"15% 15% 15% 7.5% 7.5% 10% 15% 15%",
+	    cols:"15% 15% 15% 5% 5% 5% 10% 15% 15%",
 	    rows:"100%",
-	    areas:'"back A B C1 C2 F G forward"'
+	    areas:'"back A B C1 C2 C3 F G forward"'
 	},
 	back=Button("",{class:"ORANGE RoundedL",style:{gridArea:"back"}}),
 	help=Button("Help",{class:"GREEN",style:{gridArea:"A"}}),
 	Button("Layout",{class:"GREEN",style:{gridArea:"B"}}),
-	Button({class:"BLACK",disabled:"disabled",style:{gridArea:"C1"}}),
-	Button({class:"BLACK",disabled:"disabled",style:{gridArea:"C2"}}),
+	Button({id:"AppStatus1",class:"BLACK",disabled:"disabled",style:{gridArea:"C1"}}),
+	Button({id:"AppStatus2",class:"BLACK",disabled:"disabled",style:{gridArea:"C2"}}),
+	Button({id:"AppStatus3",class:"BLACK",disabled:"disabled",style:{gridArea:"C3"}}),
 	// Introductory Help
 	// Help Summary
 	//Button("Context Specific Help",{class:"GREEN",style:{gridArea:"C"}}),
@@ -896,9 +897,28 @@ async function appscreen(f) {
 	    await appdialog(HelpIntroDialog,{})
 	    break
 	case 1: // Help Summary (Quick Reference)
-	    await appdialog(HelpReferenceDialog,{})
+	    await appdialog(HelpReferenceDialog,{f:getcontents})
 	    break
 	case 2: // Context Specific Help
+	    await appdialog((args,resolve,reject)=>{
+		var help = $attr(contents,"help")
+		if (!help) help = "This screen has not provided any context sensitive help.  Please contact the developer of this app to resolve this issue."
+		var ok = Button("Dimiss Help",{class:"ORANGE"})
+		ok.onclicklist = [ ()=>resolve() ]
+		var ret=Layout_Screen(
+		    WidgetScroller(
+			H1("About this screen"),
+			P(help),
+			{
+			    id:"gt1",
+			    scrollers: true,
+			    orientation:"v",
+			    footer: ok,
+			    //footer_h: "5%"
+			}
+		    ))
+		return ret
+	    },{})
 	case 3: // Search for Help
 	case 4: // Report an Issue
 	}
@@ -1732,7 +1752,7 @@ function UserPasswordDialog(args,resolve,reject) {
 	    },
 	    Button(usertext,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"user_text"}}),
 	    Input({id:id+"_user",class:"GREEN",style:{gridArea:"user"}}),
-	    Button("Password",{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"password_text"}}),
+	    Button(passtext,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"password_text"}}),
 	    Input({id:id+"_password",class:"BLUE",type:"password",style:{gridArea:"password"}}),
 	    cancel=Button("Cancel",{class:"ORANGE",style:{gridArea:"cancel"}}),
 	    go=Button("Submit",{class:"ORANGE",style:{gridArea:"go"}}),
@@ -1747,6 +1767,37 @@ function UserPasswordDialog(args,resolve,reject) {
 	resolve({user:username,password:password})
     } ]
     onElementLoad(id+"_user",()=>$id(id+"_user").focus())
+    return ret
+}
+
+function BusyDialog(args,resolve,reject) {
+    var ok
+    var id = args.id ? args.id : "BusyDialog"
+    var text = args.text ? args.text : "Please Standby..."
+    var oldkeydown = document.onkeydown, oldactiveelement=document.activeElement
+    document.onkeydown = function (t) {
+	if(t.which == 9) return false
+    }
+    args.resolve = function() {
+	document.onkeydown = oldkeydown
+	if (oldactiveelement) oldactiveelement.focus()
+	resolve()
+    }
+    var b,ret = Layout_Screen(
+	Layout_Grid(
+	    {
+		cols:"25% 50% 25%",
+		rows:"25% 50% 25%",
+		areas:'"a b c" "d text f" "g h i"'
+	    },
+	    b=Button(text,{class:"TEXTBLACK",style:{gridArea:"text",border:"3vw solid yellow"}})
+	), {id:id}
+    )
+    onElementLoad(id,()=>{
+	$id(id).parentNode.style.backgroundColor=""
+	b.focus()
+	b.disabled="disabled"
+    })
     return ret
 }
 
@@ -1804,11 +1855,27 @@ function OkCancelDialog(args,resolve,reject) {
 }
 
 function HelpIntroDialog(args,resolve,reject) {
-    var ok = Button("Dimiss Help",{class:"ORANGE"})
+    var ok = Button("Dimiss Help",{class:"ORANGE"}), b=[], s={
+	class:"BLUE",
+	style:{width:"25%",height:"10%"}
+    }, o = [ ]
+    var h1 = {id:"h1",help:"When this button is clicked, an example 'Ok Dialog' will be displayed, allowing the user to click ok.  When the dialog is dismissed, text will appear next to the button indicating that the dialog has been run."}
     ok.onclicklist = [ ()=>resolve() ]
     var ret=Layout_Screen(
 	WidgetScroller(
 	    H1("Welcome to WebApp"),
+	    P("The WebApp User Interface presents content in a uniform method."),
+	    P("The first concept to learn is the ",I("screen"),".  All information is packaged into a format which will fit on your screen, regardless of its size. A key difference between a screen and a web ",I("page")," is that a screen remains fixed on your screen with various rectangular areas or ",I("panels")," to display the content.  The screen itself does not scroll, but content in any of these panels is scrollable as necessary.  Scroll buttons are often present around scrollable content: these are rounded at the top for the up scroller button and rounded at the bottom for the down scroller button and have a darker shade when scrolling in that direction is not possible.  You can also scroll using the arrow keys or page up and page down. (Note: If there are multiple scrollable areas you must change which area has the keyboard focus in order to change which text panel scrolls.) On a touch interface drag the content with your finger."),
+	    P("There are various common interface elements which you can interact with.  The most common element is the ",I("Button"),".  A button is a rectangular element, sometimes with a rounded edge, which is displayed in a solid color with a narrow, differently colored border around it to separate is from other elements on the page.  Text in the button will indicate the purpose of the button.  Clicking on a button will cause it to perform its function.  A button can be clicked on directly with your pointer device such as the mouse, trackpad, trackpoint, etc. or even by tapping it with your finger if your have a touch sensitive display.  A button can also be clicked using the keyboard: The ",B("tab")," key advances the currently selected input element, usually denoted by a shaded oval shadow, while holding down the shift key while pressing tab retreats to the previous element.  When a button is selected, pressing the space bar functions the same as touching or clicking the mouse down on the button, while releasing the space bar functions the same as releasing the touch or mouse button to complete the click."),
+	    P("The default color scheme uses ",Span("Orange",{class:"ORANGE"})," to denote movement functions such as scrolling or switching to other screens, ",Span("GREEN",{class:"GREEN"})," to denote buttons which do not disturb your place on the screen, and ",Span("BLUE",{class:"BLUE"})," for text input fields."),
+	    P("A ",I("dialog")," is a special input state which overrides the current screen, obscuring its contents partially or completely.  Dialogs provide a way to select between available items or values, acknowledge or cancel certain actions and messages, and to indicate when the system is busy and cannot accept input.  You can click any of the buttons below to see an example dialog.  When the dialog pops up, make a selection where available to dismiss the dialog.  For the busy dialog, you must wait momentarily for the dialog to disappear on its own."),
+	    b[0] = Button("Ok Dialog",s,h1),o[0] = Span(), Br(),
+	    b[1] = Button("Ok / Cancel Dialog",s), o[1] = Span(), Br(),
+	    b[2] = Button("User / Password Dialog",s), o[2] = Span(), Br(),
+	    b[3] = Button("Calendar Dialog",s), o[3] = Span(), Br(),
+	    b[4] = Button("Clock Dialog",s), o[4] = Span(), Br(),
+	    b[5] = Button("Menu Dialog",s), o[5] = Span(), Br(),
+	    P("In addition to this help screen you can get other kinds of help as well.  The Quick Reference provides a quick summary of how the interface works.  And you can always get help on the current screen in order to find out more information about what the purpose of the current screen is, what is expected for a particular input field, and what a particular button or other control will do when clicked.  You can also do a free-form search looking for a given piece of text in the help, or report an issue to the developers."),
 	    {
 		id:"gt1",
 		scrollers: true,
@@ -1817,7 +1884,59 @@ function HelpIntroDialog(args,resolve,reject) {
 		//footer_h: "5%"
 	    }
 	))
-
+    b[0].onclicklist = [ async ()=> {
+	var ok = await appdialog(OkDialog,{text:"Click the Ok button"})
+	o[0].textContent = "This dialog has been run"
+    }]
+    b[1].onclicklist = [ async ()=> {
+	var ok = await appdialog(OkCancelDialog,{text:"Click one of the two buttons"})
+	o[1].textContent = ok ? "Ok was clicked" : "Cancel was clicked"
+    }]
+    b[2].onclicklist = [ async ()=> {
+	var ok = await appdialog(UserPasswordDialog,{usertext:"Name",passtext:"Favorite Color"})
+	if (!ok) {
+	    o[2].textContent = "Dialog was cancelled"
+	} else {
+	    o[2].textContent = `${ok.user}'s favorite color is reportedly ${ok.password}`
+	}
+    }]
+    b[3].onclicklist = [ async ()=> {
+	var ok = await appdialog(Calendar,{})
+	if (!ok) {
+	    o[3].textContent = "Dialog was cancelled"
+	} else {
+	    o[3].textContent = `Date entered: ${ok[1]}/${ok[2]}/${ok[3]}`
+	}
+    }]
+    /* requires SVG
+    b[4].onclicklist = [ async ()=> {
+    var ok = await appdialog(Clock,{})
+	if (!ok) {
+	    o[4].textContent = "Dialog was cancelled"
+	} else {
+	    o[4].textContent = `Time entered: ${ok}`
+	}
+    }]
+    */
+    b[5].onclicklist = [ async ()=> {
+	var ok = await appdialog(ChoiceList,{choices:[
+	    "First Choice",
+	    "Second Choice",
+	    "Third Choice",	    
+	    "Fourth Choice",	    
+	    "Fifth Choice",	    
+	    "Sixth Choice",	    
+	    "Seventh Choice",	    
+	    "Eighth Choice",	    
+	    "Ninth Choice"
+	],cancel:true,h:"20%"})
+	if (!ok) {
+	    o[5].textContent = "Dialog was cancelled"
+	} else {
+	    o[5].textContent = `${ok[0]} was selected`
+	}
+    }]
+    
     return ret
 }
 
