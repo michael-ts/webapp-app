@@ -962,7 +962,6 @@ async function appscreen(f) {
 	contents,
 	ctrl
     )
-
     $add(parent,Div({id:"screen",
 		     style:{display:"grid",
 			    gridTemplateColumns:"100vw",
@@ -2436,10 +2435,10 @@ function FindPointInText(x,y,txt) {
 	    ret=0
 	}
     } else if (x >= rect2.left && x <= rect2.right && y >= rect2.top && y <= rect2.bottom) { // click is in span2
-	if (txt1.length > 1) {
+	if (txt2.length > 1) {
 	    ret=txt1.length+FindPointInText(x,y,span2.firstChild)
 	} else { // nothing in span2, so click is at end of text
-	    ret=txt1.length // -1 ???
+	    ret=txt2.length // -1 ???
 	}
     } // else... should not reach here, click wasn't in either span!
     $replace(span0,txt)
