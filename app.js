@@ -2420,6 +2420,10 @@ function $on(xz,event,fname) {
 }
 
 // Useful functions for dealing with cursors and selections
+/*
+There is a bug in this code if the text wraps lines, because if we get a span that wraps lines our coordinate comparisons
+will potentially be incorrect. We may have to use ranges, or even a couple of function which may perform this operation for us.
+*/
 function FindPointInText(x,y,txt) {
     var orig = txt.nodeValue || ""
     var txt1 = orig.slice(0,orig.length/2)
@@ -2443,6 +2447,26 @@ function FindPointInText(x,y,txt) {
     } // else... should not reach here, click wasn't in either span!
     $replace(span0,txt)
     return ret
+}
+
+var FindPointInText2
+if (document.caretRangeFromPoint) {
+    FindPointInText2 = function(x,y) {
+	range = document.caretRangeFromPoint(x,y)
+	return {
+	    node:range.startContainer,
+	    offset:range.startOffset
+	}
+    }
+} else if (document.caretPositionFromPoint) {
+    FindPointInText2 = function(x,y) {
+	range = document.caretPositionFromPoint(x,y)
+	return {
+	    node:range.offsetNode,
+	    offset:range.offset
+	}
+    }
+} else {
 }
 
 function CursorPosGet(ob) {
