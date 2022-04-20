@@ -17,7 +17,7 @@ function $after(elem1,elem2) {
     } else {
 	elem1.parentNode.appendChild(elem2)
     }
-    return elem1
+    return elem2
 }
 
 // make elem1 be the previous sibling of elem2
@@ -48,7 +48,7 @@ function $replace(old,newob) {
     } else if (old) id = old.id
     if (typeof newob == "string") newob = document.getElementById(newob)
     if (old==newob) return old
-    if (old) {
+    if (old && old.parentNode) {
 	old.parentNode.replaceChild(newob,old)
     }
     newob.id=id
@@ -63,6 +63,14 @@ function $first(parent,child) {
     } else {
         parent.appendChild(child)
     }
+    return child
+}
+
+function $last(parent,child) {
+    if (typeof parent == "string") parent = document.getElementById(parent)
+    if (typeof child == "string") child = document.getElementById(child)
+    parent.appendChild(child)
+    return child
 }
 
 // return element from parent and return it
