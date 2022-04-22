@@ -84,6 +84,7 @@ function $del(xz) {
 
 function $value(xz,val) {
     xz = (typeof xz == "string") ? document.getElementById(xz) : xz
+    if (!xz) return
     if (typeof val == "undefined") {
 	if (typeof xz.ValueGet == "function") {
 	    return xz.ValueGet()
@@ -774,21 +775,41 @@ function appmap(url,scrn) {
     U[""] = scrn
 }
 
+var scrnAborts = { }
+function screen_abort_add(name,f) {
+    scrnAborts[name] = f
+}
+
+function screen_abort_remove(name) {
+    delete scrnAborts[name]
+}
+
 async function apprun() {
+    var i
+    for (i in scrnAborts) {
+	scrnAborts[i]()
+    }
+    scrnAborts = { }
     if (arguments.length > 0) {
 	global_args = Array.from(arguments)
 	history.pushState({},name,"/app/"+global_args.join("/"))	
     }
-    var i,x=global_args[0],U=_appmap
+    var x=global_args[0],U=_appmap
     for (i=1;i<global_args.length;i++) global_args[i] = decodeURI(global_args[i])
     for (i=0;i<global_args.length;i++) {
-	if (global_args[i] in U) {
-	    U = U[global_args[i]]
+	var l = global_args[i]
+	if (i+1 == global_args.length) {
+	    l = l.split("#")
+	    l = l[0]
+	}
+	if (l in U) {
+	    U = U[l]
 	} else break
 	if (typeof U == "string") break
     }
     if (U[""]) x = U[""]
-    await appscreen(x)
+    var state = screenstateget()
+    await appscreen(x,state)
 }
 
 function Layout_Screen() {
@@ -815,8 +836,13 @@ window.onpopstate = function() {
     apprun()
 }
 
-function screenload(app_path) {
-    apprun.apply(this,app_path.split("/"))
+function screenload(app_path,state) {
+    var args = app_path.split("/")
+    if (state) {
+	var str = Object.keys(state).map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(state[k])}`).join(";")
+	args[args.length-1] = args[args.length-1] + "#" + str
+    }
+    apprun.apply(this,args)
 }
 
 function screenstateget() {
@@ -832,13 +858,25 @@ function screenstateget() {
 }
 
 function screenstateset(ob) {
-    var str = [ ]
+    //var str = [ ]
     str = Object.keys(ob).map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(ob[k])}`).join(";")
     history.pushState({},"","#"+str)
 }
 
 var logged_in_user = ""
-async function appscreen(f) {
+async function Login(dialogargs) {
+    var new_user = await appdialog(UserPasswordDialog,dialogargs)
+    if (!new_user) return
+    if (typeof LoginHook == "function"
+	&& !(await LoginHook(new_user))) {
+	return
+    }
+    new_user = new_user.user
+    $id("username").textContent = new_user
+    logged_in_user = new_user
+}
+
+async function appscreen(f,state) {
     if (typeof f != "function") return
     while (currentDialogs.length) $del(currentDialogs.pop())
     var parent
@@ -851,7 +889,7 @@ async function appscreen(f) {
     } else {
 	parent = doc
     }
-    var contents = await f()
+    var contents = await f(state)
     var back, forward, user, help
     if (!logged_in_user) {
 	if (typeof LoggedInCheck == "function") {
@@ -937,15 +975,7 @@ async function appscreen(f) {
 	case "Guest": // user is not given the opportunity to log in
 	case "Stranger": // user is unable to log in successfully
 	case "Anonymous": // user declines to provide their identity
-	    var new_user = await appdialog(UserPasswordDialog,{})
-	    if (!new_user) return
-	    if (typeof LoginHook == "function"
-		&& !(await LoginHook(new_user.user,new_user.password))) {
-		return
-	    }
-	    new_user = new_user.user
-	    $id("username").textContent = new_user
-	    logged_in_user = new_user
+	    Login({})
 	    break
 	default: // user logs in successfully
 	    var do_logout = await appdialog(OkCancelDialog,{text:"Log out?"})
@@ -995,17 +1025,19 @@ async function appscreen(f) {
 async function appdialog(f,args) {
     if (typeof f != "function") return
     var resolve_f, reject_f, contents, ret, index, finish, dialog
+    var hasFocus = document.activeElement
     // TO DO: $del() the object and remove it from the currentDialogs array
     finish = function(f,args) {
 	$del(dialog)
 	currentDialogs.splice(index,1)
 	f.apply(window,args)
+	if (hasFocus) hasFocus.focus()
     }
     ret =  new Promise(function(resolve, reject) {
 	resolve_f = function() { finish(resolve,arguments) }
 	reject_f = function() { finish(reject,arguments) }
     })
-    contents = await f(args,resolve_f, reject_f)
+    contents = await f(args?args:{},resolve_f, reject_f)
     index = currentDialogs.length
     currentDialogs.push(contents)
     $add(doc,dialog=Div({id:"dialog"+currentDialogs.length,
@@ -1858,6 +1890,36 @@ function OkCancelDialog(args,resolve,reject) {
 	resolve(true)
     } ]
     onElementLoad(id+"_ok",()=>$id(id+"_ok").focus())
+    return ret
+}
+
+function PromptDialog(args,resolve,reject) {
+    var ok, cancel
+    var id = args.id ? args.id : "PromptDialog"
+    var text = args.text ? args.text : "Enter your choice:"
+    var oktext = args.yes ? args.yes : "Ok"
+    var canceltext = args.no ? args.no : "Cancel"
+
+    var ret = Layout_Screen(
+	Layout_Grid(
+	    {
+		cols:"50% 50%",
+		rows:"33% 33% 33%",
+		areas:'"text text" "input input" "ok cancel"'
+	    },
+	    Button(text,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"text"}}),
+	    Input({id:id+"_promptinput",class:"BLUE",style:{gridArea:"input",height:"33%",width:"100%"}}),
+	    ok=Button(oktext,{id:id+"_ok",class:"ORANGE",style:{gridArea:"ok"}}),
+	    cancel=Button(canceltext,{class:"ORANGE",style:{gridArea:"cancel"}}),
+	)
+    )
+    cancel.onclicklist = [ function() {
+	resolve(false)
+    } ]
+    ok.onclicklist = [ function() {
+	resolve($value(id+"_promptinput"))
+    } ]
+    onElementLoad(id+"_ok",()=>$id(id+"_promptinput").focus())
     return ret
 }
 
