@@ -1070,6 +1070,7 @@ function ChoiceList(args,resolve,reject) {
 	var cancel = Button(text,{id:args.id+"0",class:"ORANGE RoundedL",style:{width:"100%",height:h}})
 	cancel.onclicklist = [ function() { resolve([false,-1]) } ]
     }
+    if (!args.default) args.default = args.choices[0]
     var buttons = args.choices.map((choice,i)=>{
 	var button = Button(choice, {id:args.id+i,class:"BLUE",style:{width:"100%",height:h}})
 	button.onclicklist = [ function() { resolve([choice,i]) } ]
