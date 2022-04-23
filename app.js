@@ -1059,16 +1059,21 @@ async function appdialog(f,args) {
       id: "<id>",
       choices: [ ... ],
       cancel: <boolean or text for cancel button (default: "Cancel")
+      title: text for title (optional)
       default: "<current value>"
   }
 */
 function ChoiceList(args,resolve,reject) {
     var h = ("h" in args) ? args.h : "10%"
-    var cancel
+    if (!args.id) args.id="ChoiceList"
+    var cancel, title
     if (args.cancel) {
 	var text = (typeof args.cancel == "string" ? args.cancel : "Cancel")
-	var cancel = Button(text,{id:args.id+"0",class:"ORANGE RoundedL",style:{width:"100%",height:h}})
+	cancel = Button(text,{id:args.id+"0",class:"ORANGE RoundedL",style:{width:"100%",height:h}})
 	cancel.onclicklist = [ function() { resolve([false,-1]) } ]
+    }
+    if (args.title) {
+	title = Button(args.title,{id:args.id+"0",class:"TEXTBLACK",disabled:"disabled",style:{width:"100%",height:h}})
     }
     if (!args.default) args.default = args.choices[0]
     var buttons = args.choices.map((choice,i)=>{
@@ -1088,6 +1093,7 @@ function ChoiceList(args,resolve,reject) {
 	orientation:"v"
     }
     if (cancel) config.header = cancel //buttons.unshift(cancel)
+    if (title) config.footer = title
     if (!("scrollers" in args)) args.scrollers = true
     var ret = WidgetScroller(buttons, config)
     return ret
