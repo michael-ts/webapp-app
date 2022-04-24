@@ -1099,6 +1099,42 @@ function ChoiceList(args,resolve,reject) {
     return ret
 }
 
+// Create a Button that opens a ChoiceList when clicked
+function ChoiceListButton(text,buttonstyle,opts,f) {
+    var sty = {style:{gridArea:"L"}}
+
+    if (buttonstyle.style && "fontSize" in buttonstyle.style) {
+	sty.style.fontSize = buttonstyle.style.fontSize
+	delete buttonstyle.style.fontSize
+    }
+    if (buttonstyle && "id" in buttonstyle) {
+	sty.id = buttonstyle.id
+	delete buttonstyle.id
+    }
+    var mydiv
+    var sub = Layout_Grid(
+	{
+	    cols:"95% 5%",
+	    rows:"50% 50%",
+	    areas:'"L T" "L B"'
+	},
+	mydiv=Div(text,sty,{style:{fontSize:"1em"}}),
+	Div("▲",{style:{gridArea:"T",fontSize:"0.33em"}}),
+	Div("▼",{style:{gridArea:"B",fontSize:"0.33em"}})
+    )
+    mydiv.opts = opts // expose for CMJobCheck
+    var ret=Button(sub,buttonstyle)
+    ret.onclicklist = [
+	async() => {
+	    var choice = await appdialog(ChoiceList, opts)
+	    if (choice[0]) mydiv.textContent = choice[0]
+	    if (f) f(choice)
+	}
+    ]
+    return ret
+}
+
+
 // TO DO: make all unrecognized properties get assigned to returned div
 function WidgetScroller() {
     // id: id of the Div containing the content
@@ -2598,4 +2634,108 @@ function onElementLoad(elem,f) {
 	}
     }
     f($id(elem))
+}
+
+	
+function $StatusUpdate(ob,color,msg) {
+    ob = (typeof ob == "string") ? document.getElementById(ob) : ob
+    if (ob) {
+	ob.style.backgroundColor=color
+	ob.textContent = msg
+    }
+    return ob
+}
+
+var fetchNum=0
+/*
+  fetch wrapped with:
+  1. the ability to cancel in flight fetches when screen is about to be unloaded
+  2. automatic decoding of the response
+  3. use app status button(s) to denote status of the request
+  4. 401 status triggers login dialog
+
+  args is an object which may contain the following keys in addition to the options to fetch():
+  
+  init: function to call before entering fetch
+  cleanup: function to call after fetch returns
+  status1: text to display in AppStatus1 while request is in flight
+  status2: text to display in AppStatus2 while request is in flight
+  status3: text to display in AppStatus3 while request is in flight
+  format: string naming the response function to await call to decode the reply
+  login: boolean indicating whether or not a 401 status will trigger the login dialog
+*/
+async function fetchOrDie(url,args) {
+    var init, cleanup, status1, status2, status3, AppStatus1, AppStatus2, AppStatus3
+    if (args && args.init) {
+	init = args.init
+	delete args.init
+    }
+    if (args && args.cleanup) {
+	cleanup = args.cleanup
+	delete args.cleanup
+    }
+    if (args && args.status1) {
+	status1 = args.status1
+	delete args.status1
+	AppStatus1 = $StatusUpdate("AppStatus1","yellow",status1)
+    }
+    if (args && args.status2) {
+	status2 = args.status2
+	delete args.status2
+	AppStatus2 = $StatusUpdate("AppStatus2","yellow",status2)
+    }
+    if (args && args.status3) {
+	status3 = args.status3
+	delete args.status3
+	AppStatus3 = $StatusUpdate("AppStatus3","yellow",status3)
+    }
+    if (init) init()
+    while (true) {
+	try {
+	    const controller = new AbortController()
+	    var name = "fetch"+(++fetchNum)
+	    screen_abort_add(name,function() {
+		controller.abort()
+	    })
+	    var format, login
+	    if (args && args.login) {
+		login = args.login
+		delete args.login
+	    }
+	    if (args && args.format) {
+		format = args.format
+		delete args.format
+	    }
+	    var ret = await fetch(url, { ...args, signal:controller.signal })
+	    $StatusUpdate(AppStatus1,"","")
+	    $StatusUpdate(AppStatus2,"","")
+	    $StatusUpdate(AppStatus3,"","")
+	    screen_abort_remove(name)
+	    //console.log("fetch returning ",ret)
+	    if (ret.status == 401 && login) {
+		if (cleanup) cleanup()
+		await Login()
+		if (init) init()
+	    } else {
+		if (format) ret.data = await ret[format]()
+		if (cleanup) cleanup()
+		return ret
+	    }
+	} catch (e) {
+	    var txt
+	    if (e.message == "NetworkError when attempting to fetch resource.") { // e.name == "TypeError"
+		txt = "Network Error.  Please try again or contact your supervisor"
+	    } else if (e.name == "AbortError") {
+		return false
+	    } else {
+		txt = "Please contact your supervisor to report this error: "+e.name+":"+e.message
+	    }
+	    if (cleanup) cleanup()
+	    $StatusUpdate(AppStatus1,"red","")
+	    $StatusUpdate(AppStatus2,"red","")
+	    $StatusUpdate(AppStatus3,"red","")
+	    await appdialog(OkDialog,{text:txt})
+	    return false
+	}
+    }
 }
