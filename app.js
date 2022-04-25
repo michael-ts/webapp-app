@@ -1100,7 +1100,7 @@ function ChoiceList(args,resolve,reject) {
 }
 
 // Create a Button that opens a ChoiceList when clicked
-function ChoiceListButton(text,buttonstyle,opts,f) {
+function ChoiceListButton(text,buttonstyle,opts,post,pre) {
     var sty = {style:{gridArea:"L"}}
 
     if (buttonstyle.style && "fontSize" in buttonstyle.style) {
@@ -1126,9 +1126,10 @@ function ChoiceListButton(text,buttonstyle,opts,f) {
     var ret=Button(sub,buttonstyle)
     ret.onclicklist = [
 	async() => {
+	    if (pre) pre()
 	    var choice = await appdialog(ChoiceList, opts)
 	    if (choice[0]) mydiv.textContent = choice[0]
-	    if (f) f(choice)
+	    if (post) post(choice)
 	}
     ]
     return ret
