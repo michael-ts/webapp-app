@@ -1126,9 +1126,9 @@ function ChoiceListButton(text,buttonstyle,opts,post,pre) {
     var ret=Button(sub,buttonstyle)
     ret.onclicklist = [
 	async() => {
-	    if (pre) pre()
+	    if (pre) await pre()
 	    var choice = await appdialog(ChoiceList, opts)
-	    if (choice[0]) mydiv.textContent = choice[0]
+	    if (choice[0] && opts.auto != false) mydiv.textContent = choice[0]
 	    if (post) post(choice)
 	}
     ]
@@ -2189,6 +2189,8 @@ if (typeof module == "object" && module.exports) {
 // ============================================================================
 
 var GlobalTabIndex = 0
+var EventChangeLog = [ ]
+var EventChangeRecording
 
 function EventDispatch(name,me,event) {
     var i,handlers = me.getAttribute("on"+name+"list")
@@ -2264,6 +2266,9 @@ function EventChangeInput(me,event) {
 }
 
 function EventChangeButton(me,event) {
+    if (EventChangeRecording) {
+	EventChangeLog.push({me:me,id:me.id,op:"Change",value:$value(me),t:new Date()})
+    }
     var i,handlers = me.getAttribute("onchangelist")
     if (handlers) {
 	handlers = handlers.split(",")
