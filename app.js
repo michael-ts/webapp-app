@@ -1032,6 +1032,9 @@ async function appdialog(f,args) {
     var hasFocus = document.activeElement
     // TO DO: $del() the object and remove it from the currentDialogs array
     finish = function(f,args) {
+	if (EventChangeRecording) {
+	    EventChangeLog.push({op:"DialogEnd",depth:currentDialogs.length,t:new Date()})	
+	}    
 	$del(dialog)
 	currentDialogs.splice(index,1)
 	f.apply(window,args)
@@ -1054,6 +1057,9 @@ async function appdialog(f,args) {
 			 left:0,top:0,width:"100vw",height:"100vh",
 			 zIndex:(1000+index)}},contents))
     // to do: handle dialogs properly on screen resize
+    if (EventChangeRecording) {
+	EventChangeLog.push({op:"Dialog",depth:currentDialogs.length,t:new Date()})	
+    }    
     return ret
 }
 
@@ -2237,6 +2243,10 @@ function EventChangeRadio(me,event) {
 }
 
 function EventChangeCheckbox(me,event) {
+    if (EventChangeRecording) {
+	if (!me.id) debugger
+	EventChangeLog.push({id:me.id,op:"Change",value:(me.checked?me.name:""),t:new Date()})
+    }
     me.setAttribute("value",me.checked ? me.name : "")    
     me.defaultChecked = !!me.checked
     var i,handlers = me.getAttribute("onchangelist")
@@ -2251,6 +2261,10 @@ function EventChangeCheckbox(me,event) {
 
 // INPUT, SELECT, TEXTAREA
 function EventChangeInput(me,event) {
+    if (EventChangeRecording) {
+	if (!me.id) debugger
+	EventChangeLog.push({id:me.id,op:"Change",value:me.value,t:new Date()})
+    }
     me.setAttribute("value",me.value)
     var i,handlers = me.getAttribute("onchangelist")
     if (handlers) {
@@ -2271,7 +2285,8 @@ function EventChangeInput(me,event) {
 
 function EventChangeButton(me,event) {
     if (EventChangeRecording) {
-	EventChangeLog.push({me:me,id:me.id,op:"Change",value:$value(me),t:new Date()})
+	if (!me.id) debugger
+	EventChangeLog.push({id:me.id,op:"Change",value:$value(me),t:new Date()})
     }
     var i,handlers = me.getAttribute("onchangelist")
     if (handlers) {
