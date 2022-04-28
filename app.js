@@ -784,6 +784,7 @@ function screen_abort_remove(name) {
     delete scrnAborts[name]
 }
 
+var appWidgetCount=0
 async function apprun() {
     var i
     for (i in scrnAborts) {
@@ -793,6 +794,9 @@ async function apprun() {
     if (arguments.length > 0) {
 	global_args = Array.from(arguments)
 	history.pushState({},name,"/app/"+global_args.join("/"))	
+    }
+    if (EventChangeRecording) {
+	EventChangeLog.push({op:"Run",args:global_args,t:new Date()})	
     }
     var x=global_args[0],U=_appmap
     for (i=1;i<global_args.length;i++) global_args[i] = decodeURI(global_args[i])
@@ -2413,6 +2417,8 @@ function EventPointerUpButton(me,event) {
 function Button() {
     var xz = document.createElement("button")
     $add(xz,arguments)
+    appWidgetCount++
+    if (!xz.id) xz.id = "widget"+appWidgetCount
     // buttons created disabled don't get a tab order
     if (!xz.disabled) $attr(xz,{tabindex:(""+(++GlobalTabIndex))})
     xz.setAttribute("value","false")
