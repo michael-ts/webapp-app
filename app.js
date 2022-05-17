@@ -2256,6 +2256,13 @@ function EventChangeCheckbox(me,event) {
 	    var f = window[handlers[i]]
 	    if (typeof(f) == "function") f(me,event)
 	}
+    } else {
+	handlers = me.onchangelist
+	if (handlers) {
+	    for (i=0;i<handlers.length;i++) {
+		if (typeof handlers[i] == "function") handlers[i](me,event)
+	    }
+	}
     }
 }
 
