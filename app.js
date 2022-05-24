@@ -876,7 +876,8 @@ async function Login(dialogargs) {
 	return
     }
     new_user = new_user.user
-    $id("username").textContent = new_user
+    var un = $id("username")
+    if (un) un.textContent = new_user
     logged_in_user = new_user
 }
 
@@ -988,7 +989,8 @@ async function appscreen(f,state) {
 		if (typeof LogoutHook == "function"
 		    && !(await LogoutHook(logged_in_user))) return // not recommended!
 		logged_in_user = "Anonymous"
-		$id("username").textContent = logged_in_user
+		var un = $id("username")
+		if (un) un.textContent = logged_in_user
 	    }
 	}
     } ]
@@ -2210,6 +2212,13 @@ function EventDispatch(name,me,event) {
 	    var f = window[handlers[i]]
 	    if (typeof(f) == "function") f(me,event)
 	}
+    } else {
+	handlers = me["on"+name+"list"]
+	if (handlers) {
+	    for (i=0;i<handlers.length;i++) {
+		if (typeof handlers[i] == "function") handlers[i](me,event)
+	    }
+	}
     }
 }
 
@@ -2273,21 +2282,7 @@ function EventChangeInput(me,event) {
 	EventChangeLog.push({id:me.id,op:"Change",value:me.value,t:new Date()})
     }
     me.setAttribute("value",me.value)
-    var i,handlers = me.getAttribute("onchangelist")
-    if (handlers) {
-	handlers = handlers.split(",")
-	for (i=0;i<handlers.length;i++) {
-	    var f = window[handlers[i]]
-	    if (typeof(f) == "function") f(me,event)
-	}
-    } else {
-	handlers = me.onchangelist
-	if (handlers) {
-	    for (i=0;i<handlers.length;i++) {
-		if (typeof handlers[i] == "function") handlers[i](me,event)
-	    }
-	}
-    }
+    EventDispatch("change",me,event)
 }
 
 function EventChangeButton(me,event) {
@@ -2295,57 +2290,15 @@ function EventChangeButton(me,event) {
 	if (!me.id) debugger
 	EventChangeLog.push({id:me.id,op:"Change",value:$value(me),t:new Date()})
     }
-    var i,handlers = me.getAttribute("onchangelist")
-    if (handlers) {
-	handlers = handlers.split(",")
-	for (i=0;i<handlers.length;i++) {
-	    var f = window[handlers[i]]
-	    if (typeof(f) == "function") f(me,event)
-	}
-    } else {
-	handlers = me.onchangelist
-	if (handlers) {
-	    for (i=0;i<handlers.length;i++) {
-		if (typeof handlers[i] == "function") handlers[i](me,event)
-	    }
-	}
-    }
+    EventDispatch("change",me,event)
 }
 
 function EventButton(me,event,name) {
-    var i,handlers = me.getAttribute(`on${name}list`)
-    if (handlers) {
-	handlers = handlers.split(",")
-	for (i=0;i<handlers.length;i++) {
-	    var f = window[handlers[i]]
-	    if (typeof(f) == "function") f(me,event)
-	}
-    } else {
-	handlers = me[`on${name}list`]
-	if (handlers) {
-	    for (i=0;i<handlers.length;i++) {
-		if (typeof handlers[i] == "function") handlers[i](me,event)
-	    }
-	}
-    }
+    EventDispatch(name,me,event)
 }
 
 function EventClickButton(me,event) {
-    var i,handlers = me.getAttribute("onclicklist")
-    if (handlers) {
-	handlers = handlers.split(",")
-	for (i=0;i<handlers.length;i++) {
-	    var f = window[handlers[i]]
-	    if (typeof(f) == "function") f(me,event)
-	}
-    } else {
-	handlers = me.onclicklist
-	if (handlers) {
-	    for (i=0;i<handlers.length;i++) {
-		if (typeof handlers[i] == "function") handlers[i](me,event)
-	    }
-	}
-    }
+    EventDispatch("click",me,event)
     event.stopPropagation()
 }
 
