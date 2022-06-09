@@ -445,6 +445,9 @@ function Progress() {
 function Section() {
     return $add(_HTMLElement("section"),arguments)
 }
+function Slot() {
+    return $add(_HTMLElement("slot"),arguments)
+}
 function Span() {
     return $add(_HTMLElement("span"),arguments)
 }
