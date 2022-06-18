@@ -57,7 +57,7 @@ button {
 }
 
 .BLUE {
-    background-color:#AEE0FF; /* HSB 203,32,100 */
+    background-color:#AEE0FF; /* hsv(203, 32% ,100%) */
     color:#000000;
     border:solid black;
 }
@@ -66,7 +66,7 @@ button {
 }
 
 .BLUE:focus {
-    background-color:#E6F5FF; /* HSB 204,10,100 */
+    background-color:#E6F5FF; /* hsv(204, 10%, 100% */
     background-color:#FFFFFF;  /* 203,32,100 -> 203,32,80 -> 203,32,50*/
     background: radial-gradient(#AEE0FF 20%,#8BB4CC 66%,#577080 90%);
     outline-color:transparent;
@@ -120,27 +120,44 @@ button {
     background: radial-gradient(rgb(48,129,255) 20%, rgb(39,103,204) 66%, rgb(24, 65, 128) 90%);
 }
 
+/*
 .GREEN {
-    background:#b7ffad;
+    background:#b7ffad; // hsv(113, 32%, 100%)
     color:#000000;
     border:solid black;
 }
 .GREEN:disabled {
-    background:#5B8057;
+    background:#5B8057; // hsv(113, 32%, 50%)
 }
 
 .GREEN:focus {
-    background:#DDFFD9;
+    background:#DFFFDB; // hsl(113,100%,93%), hsv(114, 15%, 100%)
     background:#FFFFFF;
-    background: radial-gradient(#b7ffad 20%,#93CC8B 66%,#5C8057 80%);
-    outline-color:transparent;
+    background: radial-gradient(#b7ffad 20%,#93CC8B 66%,#5C8057 80%); // hsl(113,100%, 84%) hsl(113, 39%, 67%) hsl(113, 39%, 67%)
+    outline-color:transparent;                                        // hsv(113, 32%, 100%) hsv(113, 32%, 80%) hsv(113, 32%, 50%)
     outline-style:none;
 }
 .GREEN:enabled:active, .GREEN.active {
-    background: #93CC8B;
-    background: radial-gradient(#93CC8B 20%,#5C8057 66%,#2E402B 80%);
+    background: #93CC8B; //  hsl(113, 39%, 67%), hsv(113, 32%, 80%)
+    background: radial-gradient(#93CC8B 20%,#5C8057 66%,#2D402B 80%); // hsl(113, 39%, 67%) hsl(113, 19%, 42%) hsl(113, 20%, 21%)
+}                                                                     // hsv(113, 32%, 80%) hsv(113, 32%, 50%) hsv(114, 33%, 25%)
+*/
+.GREEN {
+    background-color: rgb(183,255,173);
+    color: #000000;
+    border: solid black;
 }
-
+.GREEN:disabled {
+    background-color: rgb(91,128,87);
+}
+.GREEN:focus {
+    background: radial-gradient(rgb(183,255,173) 20%,rgb(146,204,139) 66%,rgb(91,128,87) 90%);
+    outline-color: transparent;
+    outline-style: none;
+}
+.GREEN:enabled:active, .GREEN.active {
+    background: radial-gradient(rgb(146,204,139) 20%,rgb(91,128,87) 66%,rgb(46,64,43) 90%);
+}
 .MAGENTA {
     background-color:#F6AEFF;
     color:#000000;
@@ -160,17 +177,42 @@ button {
     background-color:#c58bcc;
     background: radial-gradient(#c58bcc 20%,#7B5780 66%,#3D2B40 80%);
 }
+/*
 .RED {
-    background:#FF8585;
+    background:#FF8080; // hsv(0, 50%, 100%)
     color:#ffffff;
     border:solid black;
 }
 .RED:disabled {
-    background:#804343;
+    background:#806060; // hsv(0, 50%, 50%);
+}
+.RED:focus {
+    background-color:#ffbfbf; // hsv(0, 25%, 100%)
+    background-color:#FFFFFF;
+    background: radial-gradient(#ff8080 20%,#804040 66%,#402020 80%); // hsv(0, 50%, 100%) hsv(0, 50%, 50%) hsv(0, 50%, 25%)
+    outline-color:transparent;
+    outline-style:none;
 }
 .RED:enabled:active, .RED.active {
-    background:#CC6A6A;
-    background-active:#CC6A6A;
+    background:#804040;
+    background-active: radial-gradient(#804040 20%,#402020 66%,#1f0f0f 80%);
+}
+*/
+.RED {
+    background-color: rgb(255,128,128);
+    color: #000000;
+    border: solid black;
+}
+.RED:disabled {
+    background-color: rgb(128,64,64);
+}
+.RED:focus {
+    background: radial-gradient(rgb(255,128,128) 20%,rgb(204,102,102) 66%,rgb(128,64,64) 90%);
+    outline-color: transparent;
+    outline-style: none;
+}
+.RED:enabled:active, .RED.active {
+    background: radial-gradient(rgb(204,102,102) 20%,rgb(128,64,64) 66%,rgb(64,32,32) 90%);
 }
 
 .ORANGE {
