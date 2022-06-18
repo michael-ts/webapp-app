@@ -867,6 +867,7 @@ function screenstateget() {
 function screenstateset(ob) {
     //var str = [ ]
     str = Object.keys(ob).map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(ob[k])}`).join(";")
+    if ("#"+str == location.hash) return
     history.pushState({},"","#"+str)
 }
 
@@ -986,14 +987,29 @@ async function appscreen(f,state) {
 	    Login({})
 	    break
 	default: // user logs in successfully
-	    var do_logout = await appdialog(OkCancelDialog,{text:"Log out?"})
-	    console.log(do_logout)
-	    if (do_logout) {
-		if (typeof LogoutHook == "function"
-		    && !(await LogoutHook(logged_in_user))) return // not recommended!
-		logged_in_user = "Anonymous"
-		var un = $id("username")
-		if (un) un.textContent = logged_in_user
+    	    var [txt,n] = await appdialog(ChoiceList, {
+		id:"logoutMenu",choices:["Log out", "Change Password"],scrollers:false,h:"20%",cancel:true
+	    })
+	    if (n == 0) {
+		var do_logout = await appdialog(OkCancelDialog,{text:"Log out?"})
+		console.log(do_logout)
+		if (do_logout) {
+		    if (typeof LogoutHook == "function"
+			&& !(await LogoutHook(logged_in_user))) return // not recommended!
+		    logged_in_user = "Anonymous"
+		    var un = $id("username")
+		    if (un) un.textContent = logged_in_user
+		}
+	    } else {
+		var info = await appdialog(ChangePasswordDialog)
+		if (!info) return
+		if (typeof ChgPasswdHook == "function") {
+		    if (await ChgPasswdHook(info)) {
+			await appdialog(OkDialog,{text:"Password Changed Successfully"})
+		    } else {
+			await appdialog(OkDialog,{text:"Password Change Failed"})
+		    }
+		}
 	    }
 	}
     } ]
@@ -1865,6 +1881,47 @@ function UserPasswordDialog(args,resolve,reject) {
 	resolve({user:username,password:password})
     } ]
     onElementLoad(id+"_user",()=>$id(id+"_user").focus())
+    return ret
+}
+
+function ChangePasswordDialog(args,resolve,reject) {
+    var go, cancel
+    var id = args.id ? args.id : "ChangePasswordDialog"
+    var pass1text = args.usertext ? args.usertext : "Old Password"
+    var pass2text = args.passtext ? args.passtext : "New Password"
+    var pass3text = args.passtext ? args.passtext : "Repeat New Password"
+    
+    var ret = Layout_Screen(
+	Layout_Grid(
+	    {
+		cols:"50% 50%",
+		rows:"25% 25% 25% 25%",
+		areas:'"pass1_text pass1" "pass2_text pass2" "pass3_text pass3" "cancel go"'
+	    },
+	    Button(pass1text,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"pass1_text"}}),
+	    Input({id:id+"_pass1",class:"GREEN",type:"password",style:{gridArea:"pass1"}}),
+	    Button(pass2text,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"pass2_text"}}),
+	    Input({id:id+"_pass2",class:"BLUE",type:"password",style:{gridArea:"pass2"}}),
+	    Button(pass3text,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"pass3_text"}}),
+	    Input({id:id+"_pass3",class:"BLUE",type:"password",style:{gridArea:"pass3"}}),
+	    cancel=Button("Cancel",{class:"ORANGE",style:{gridArea:"cancel"}}),
+	    go=Button("Submit",{class:"ORANGE",style:{gridArea:"go"}}),
+	)
+    )
+    cancel.onclicklist = [ function() {
+	resolve(false)
+    } ]
+    go.onclicklist = [ async function() {
+	var oldpw = $value(id+"_pass1")
+	var newpw = $value(id+"_pass2")
+	var alsonewpw = $value(id+"_pass3")
+	if (newpw != alsonewpw) {
+	    await appdialog(OkDialog,{text:"New Passwords do not match!"})
+	    return
+	}
+	resolve({oldpw,newpw})
+    } ]
+    onElementLoad(id+"_pass1",()=>$id(id+"_pass1").focus())
     return ret
 }
 
