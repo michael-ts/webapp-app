@@ -2177,6 +2177,14 @@ function app_init() {
 	    dangerKey1Pressed=true
 	} else if (event.key == "Backspace") {
 	    dangerKey2Pressed=true
+	} else if (event.key == "Enter") {
+	    var submit = $id("submit")
+	    var evt = {
+		key:"Space",
+		stopPropagation:event.stopPropagation.bind(event),
+		preventDefault:event.preventDefault.bind(event)
+	    }
+	    if (submit) EventKeyDownButton(submit,evt)
 	}
     })
     window.addEventListener("keyup",function(event) {
@@ -2184,6 +2192,14 @@ function app_init() {
 	    dangerKey1Pressed=false
 	} else if (event.key == "Backspace") {
 	    dangerKey2Pressed=false
+	} else if (event.key == "Enter") {
+	    var submit = $id("submit")
+	    var evt = {
+		key:"Space",
+		stopPropagation:event.stopPropagation.bind(event),
+		preventDefault:event.preventDefault.bind(event)
+	    }
+	    if (submit) EventKeyUpButton(submit,evt)
 	}
     })
     window.addEventListener("beforeunload",function(event) {
@@ -2457,8 +2473,9 @@ function Button() {
     // buttons created disabled don't get a tab order
     if (!xz.disabled) $attr(xz,{tabindex:(""+(++GlobalTabIndex))})
     xz.setAttribute("value","false")
-    xz.setAttribute("onkeydown","EventKeyDownButton(this,event)")
-    xz.setAttribute("onkeyup","EventKeyUpButton(this,event)")
+    xz.addEventListener("keydown",(event)=>EventKeyDownButton(this,event))
+    xz.addEventListener("keyup",(event)=>{EventKeyUpButton(this,event)})
+    
     xz.setAttribute("onmousedown","EventMouseDownButton(this,event)")
     xz.setAttribute("onmouseup","EventMouseUpButton(this,event)")
     xz.setAttribute("onpointerdown","EventPointerDownButton(this,event)")
@@ -2534,6 +2551,12 @@ function TextArea() {
     $attr(xz,{tabindex:(""+(++GlobalTabIndex))})
     $add(xz,arguments)
     xz.setAttribute("onchange","EventChangeInput(this,event)")
+    xz.addEventListener("keydown",(event)=>{
+	if (event.key == "Enter") event.stopPropagation()
+    })
+    xz.addEventListener("keyup",(event)=>{
+	if (event.key == "Enter") event.stopPropagation()
+    })
     return xz
 }
 
