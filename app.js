@@ -866,7 +866,7 @@ function screenstateget() {
 
 function screenstateset(ob) {
     //var str = [ ]
-    str = Object.keys(ob).map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(ob[k])}`).join(";")
+    str = Object.keys(ob).filter(k=>!!ob[k]).map(k=>`${encodeURIComponent(k)}=${encodeURIComponent(ob[k])}`).join(";")
     if ("#"+str == location.hash) return
     history.pushState({},"","#"+str)
 }
