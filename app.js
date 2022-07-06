@@ -2276,7 +2276,6 @@ if (typeof module == "object" && module.exports) {
 // UI stuff (to be cleaned up / documented)
 // ============================================================================
 
-var GlobalTabIndex = 0
 var EventChangeLog = [ ]
 var EventChangeRecording
 
@@ -2471,10 +2470,10 @@ function Button() {
     appWidgetCount++
     if (!xz.id) xz.id = "widget"+appWidgetCount
     // buttons created disabled don't get a tab order
-    if (!xz.disabled) $attr(xz,{tabindex:(""+(++GlobalTabIndex))})
+    if (!xz.disabled) $attr(xz,{tabindex:0})
     xz.setAttribute("value","false")
-    xz.addEventListener("keydown",(event)=>EventKeyDownButton(this,event))
-    xz.addEventListener("keyup",(event)=>{EventKeyUpButton(this,event)})
+    xz.addEventListener("keydown",(event)=>EventKeyDownButton(xz,event))
+    xz.addEventListener("keyup",(event)=>{EventKeyUpButton(xz,event)})
     
     xz.setAttribute("onmousedown","EventMouseDownButton(this,event)")
     xz.setAttribute("onmouseup","EventMouseUpButton(this,event)")
@@ -2504,7 +2503,7 @@ function Button() {
 
 function Input() {
     var xz = document.createElement("input")
-    $attr(xz,{tabindex:""+(++GlobalTabIndex)})
+    $attr(xz,{tabindex:0})
     $add(xz,arguments)
     // we probably should use something other than true/false for checkboxes
     // and radio buttons, in case we should want to submit. we should have
@@ -2539,7 +2538,7 @@ function Input() {
 //    and making this go away if needed once something is selected
 function Select() {
     var xz = document.createElement("select")
-    $attr(xz,{tabindex:(""+(++GlobalTabIndex))})
+    $attr(xz,{tabindex:0})
     $add(xz,arguments)
     xz.setAttribute("onchange","EventChangeInput(this,event)")    
     return xz
@@ -2548,7 +2547,7 @@ function Select() {
 // TextArea({rows:xxx,cols:yyy},"text contents")
 function TextArea() {
     var xz = document.createElement("textarea")
-    $attr(xz,{tabindex:(""+(++GlobalTabIndex))})
+    $attr(xz,{tabindex:0})
     $add(xz,arguments)
     xz.setAttribute("onchange","EventChangeInput(this,event)")
     xz.addEventListener("keydown",(event)=>{
