@@ -421,6 +421,9 @@ function IFrame() {
 function Img() {
     return $add(_HTMLElement("img"),arguments)
 }
+function Label() {
+    return $add(_HTMLElement("label"),arguments)
+}
 function LI() {
     return $add(_HTMLElement("li"),arguments)
 }
@@ -518,6 +521,7 @@ var tagMap = {
     IFRAME:'IFrame',
     IMG:'Img',
     INPUT:'Input',
+    LABEL:'Label',
     LI:'LI',
     OL:'OL',
     OPTION:'Option',
@@ -837,12 +841,6 @@ function Layout_Grid(grid,...rest) {
 
 var currentScreen, currentDialogs = []
 
-window.onpopstate = function() {
-    var a=appinfo()
-    global_args = a.app_path
-    apprun()
-}
-
 function screenload(app_path,state) {
     var args = app_path.split("/")
     if (state) {
@@ -1016,15 +1014,32 @@ async function appscreen(f,state) {
     contents.style.gridArea = "AAA"
     ctrl.style.gridArea = "BBB"
 
-    var scr = Layout_Grid(
-	{
-	    cols:"100%",
-	    rows:"90% 10%",
-	    areas:'"AAA" "BBB"'
-	},
-	contents,
-	ctrl
-    )
+    var scr
+    if ($attr(contents,"helpless")) {
+	scr = Layout_Grid(
+	    {
+		cols:"100%",
+		rows:"90% 10%",
+		areas:'"AAA" "AAA"'
+	    },
+	    contents
+	)
+    } else {
+	var h = $attr(contents,"helpheight")
+	var rows="90% 10%"
+	if (h) {
+	    rows = `auto ${h}`
+	}
+	scr = Layout_Grid(
+	    {
+		cols:"100%",
+		rows:rows,
+		areas:'"AAA" "BBB"'
+	    },
+	    contents,
+	    ctrl
+	)
+    }
     $add(parent,Div({id:"screen",
 		     style:{display:"grid",
 			    gridTemplateColumns:"100vw",
@@ -1865,9 +1880,9 @@ function UserPasswordDialog(args,resolve,reject) {
 		areas:'"user_text user" "password_text password" "cancel go"'
 	    },
 	    Button(usertext,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"user_text"}}),
-	    Input({id:id+"_user",class:"GREEN",style:{gridArea:"user"}}),
+	    Input({id:id+"_user",class:"GREEN",style:{gridArea:"user", fontSize:"4.5vmin"}}),
 	    Button(passtext,{disabled:"disabled",class:"TEXTBLACK",style:{gridArea:"password_text"}}),
-	    Input({id:id+"_password",class:"BLUE",type:"password",style:{gridArea:"password"}}),
+	    Input({id:id+"_password",class:"BLUE",type:"password",style:{gridArea:"password", fontSize:"4.5vmin"}}),
 	    cancel=Button("Cancel",{class:"ORANGE",style:{gridArea:"cancel"}}),
 	    go=Button("Submit",{class:"ORANGE",style:{gridArea:"go"}}),
 	)
@@ -2168,10 +2183,16 @@ function app_init() {
 // ============================================================================
 // Web App
 // ============================================================================
+var FindPointInText2
 (function() {
     if (typeof window != "object") return
     var dangerKey1Pressed=false
     var dangerKey2Pressed=false
+    window.onpopstate = function() {
+	var a=appinfo()
+	global_args = a.app_path
+	apprun()
+    }
     window.addEventListener("keydown",function(event) {
 	if (event.key == "Delete") {
 	    dangerKey1Pressed=true
@@ -2208,6 +2229,24 @@ function app_init() {
 	    return event.returnValue = "Really leave this page?"
 	}
     })
+    if (document.caretRangeFromPoint) {
+	FindPointInText2 = function(x,y) {
+	    range = document.caretRangeFromPoint(x,y)
+	    return {
+		node:range.startContainer,
+		offset:range.startOffset
+	    }
+	}
+    } else if (document.caretPositionFromPoint) {
+	FindPointInText2 = function(x,y) {
+	    range = document.caretPositionFromPoint(x,y)
+	    return {
+		node:range.offsetNode,
+		offset:range.offset
+	    }
+	}
+    } else {
+    }
 })()
 
 var Global = function Global() {
@@ -2217,7 +2256,7 @@ var Global = function Global() {
 }
 Global(
     // Element functions
-    A,B,Br,Button,Canvas,Col,ColGroup,Div,Em,Font,H1,H2,H3,H4,H5,H6,HR,I,Img,LI,
+    A,B,Br,Button,Canvas,Col,ColGroup,Div,Em,Font,H1,H2,H3,H4,H5,H6,HR,I,Img,Label,LI,
     Meta,OL,Option,P,Pre,Progress,Section,Span,Strike,Strong,Table,TBody,
     TD,TFoot,TH,THead,TR,TT,U,UL,Video,tagMap,
     // supported $ functions
@@ -2631,26 +2670,6 @@ function FindPointInText(x,y,txt) {
     return ret
 }
 
-var FindPointInText2
-if (document.caretRangeFromPoint) {
-    FindPointInText2 = function(x,y) {
-	range = document.caretRangeFromPoint(x,y)
-	return {
-	    node:range.startContainer,
-	    offset:range.startOffset
-	}
-    }
-} else if (document.caretPositionFromPoint) {
-    FindPointInText2 = function(x,y) {
-	range = document.caretPositionFromPoint(x,y)
-	return {
-	    node:range.offsetNode,
-	    offset:range.offset
-	}
-    }
-} else {
-}
-
 function CursorPosGet(ob) {
     if (document.selection) {
         ob.focus()
@@ -2775,7 +2794,9 @@ async function fetchOrDie(url,args) {
 		format = args.format
 		delete args.format
 	    }
+	    console.log("fetchOrDie calling fetch for ",url," with args:",args)
 	    var ret = await fetch(url, { ...args, signal:controller.signal })
+	    console.log("fetchOrDie got response from fetch for ",url,":",ret)
 	    $StatusUpdate(AppStatus1,"","")
 	    $StatusUpdate(AppStatus2,"","")
 	    $StatusUpdate(AppStatus3,"","")
@@ -2787,6 +2808,7 @@ async function fetchOrDie(url,args) {
 		if (init) init()
 	    } else {
 		if (format) ret.data = await ret[format]()
+		console.log("fetchOrDie data from fetch for ",url,":",ret.data)
 		if (cleanup) cleanup()
 		return ret
 	    }
@@ -2797,7 +2819,7 @@ async function fetchOrDie(url,args) {
 	    } else if (e.name == "AbortError") {
 		return false
 	    } else {
-		txt = "Please contact your supervisor to report this error: "+e.name+":"+e.message
+		txt = "Please contact your supervisor to report this error: "+e.name+":"+e.message+" for "+url
 	    }
 	    if (cleanup) cleanup()
 	    $StatusUpdate(AppStatus1,"red","")
